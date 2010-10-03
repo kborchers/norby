@@ -1,8 +1,11 @@
-Add support for multiple channels :)
-    The bot now replies to the channel the message originated from.
-    Not sure if anything else is needed, nice and stateless as it is.
+Fix the cabal files
+    Never done it, gotta find out how.
 
-Add support for multiple networks :)
+Add support for multiple channels
+    The bot now replies to the channel the message originated from.
+    Need to handle queries and stuff though.
+
+Add support for multiple networks
     Or just run one bot per network, hehehe.
 
 Add support for CTCP messages
@@ -11,6 +14,7 @@ Add support for CTCP messages
     as CTCP messages are just like any other but with some \SOH thrown in.
 
 Add support for query
+    Messages kinda like this
     got:  :nlogax!~nlogax@unaffiliated/nlogax PRIVMSG ultror :> 1
-    "sent: PRIVMSG ultror :  1\n"
+    sent: PRIVMSG ultror :  1\n
     got:  :ultror!~ultror@c-a599e253.014-262-73746f13.cust.bredbandsbolaget.se PRIVMSG ultror :  1
