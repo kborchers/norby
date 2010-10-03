@@ -1,0 +1,16 @@
+Add support for multiple channels :)
+    The bot now replies to the channel the message originated from.
+    Not sure if anything else is needed, nice and stateless as it is.
+
+Add support for multiple networks :)
+    Or just run one bot per network, hehehe.
+
+Add support for CTCP messages
+    The Seen stuff now prints ACTIONs nicely.
+    Anything else will probably have to be handled on a per-message basis,
+    as CTCP messages are just like any other but with some \SOH thrown in.
+
+Add support for query
+    got:  :nlogax!~nlogax@unaffiliated/nlogax PRIVMSG ultror :> 1
+    "sent: PRIVMSG ultror :  1\n"
+    got:  :ultror!~ultror@c-a599e253.014-262-73746f13.cust.bredbandsbolaget.se PRIVMSG ultror :  1
