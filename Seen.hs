@@ -10,7 +10,7 @@ import           Data.Monoid
 import           Data.Time
 import           Data.UString (u)
 import           Database.MongoDB
-import           System.Random
+import           Text.Printf
 import           Types
 
 import qualified Utils as U
@@ -57,16 +57,15 @@ seen (Message (Just (NickName n _ _)) _ params) = do
                             { sort = ["_id" =: (-1 :: Int)] }
            
            result nick (Just val) = do
-                  now  <- getCurrentTime
-                  let  txt = B.at "text" val :: String
-                  let  cmd = B.at "what" val :: String
-                  let  chn = B.at "chan" val :: String
-                  let  whn = B.at "date" val :: UTCTime
-                  return $ n ++ unwords
-                           [":", formatSeen nick txt cmd chn,
-                            timeAgo now whn]
-           result nick Nothing = return $ unwords [n ++ ":", nick,
-                                                   "means nothing to me."]
+                  now <- getCurrentTime
+                  let txt = B.at "text" val :: String
+                  let cmd = B.at "what" val :: String
+                  let chn = B.at "chan" val :: String
+                  let whn = B.at "date" val :: UTCTime
+                  return $ printf "%s: %s %s" n (formatSeen nick txt cmd chn)
+                                                (timeAgo now whn)
+           result nick Nothing = return $
+                                 printf "%s: %s means nothing to me." n nick
 
 seen (Message _ _ _) = return "nlogax fails at pattern matching."
 
@@ -77,18 +76,18 @@ escape' []     = []
 escape' (c:cs) = escape c ++ escape' cs
 
 formatSeen nick msg "PRIVMSG" chan
-    | "\SOHACTION" `isPrefixOf` msg = concat [nick, " was all like *", nick, " ",
-                                              U.excerpt 60 "..." . init . drop 8 $ U.trim msg, "* in ", chan]
-    | otherwise                     = concat [nick, " said \"",
-                                              U.excerpt 60 "..." $ U.trim msg,
-                                              "\" in ", chan]
+    | "\SOHACTION" `isPrefixOf` msg = printf "%s was all like *%s %s* in %s" nick nick
+                                             (U.excerpt 60 "…" . init . drop 8 $ U.trim msg)
+                                             chan
+    | otherwise                     = printf "%s said \"%s\" in %s" nick
+                                              (U.excerpt 60 "…" $ U.trim msg)
+                                              chan
 
-formatSeen nick msg "PART" chan = unwords [nick, "left", chan, "with the message", '"' : msg ++ "\""]
-formatSeen nick _   "JOIN" chan = unwords [nick, "joined", chan]
-formatSeen nick msg "QUIT" _    = unwords [nick, "quit with the message",
-                                           '"' : msg ++ "\""]
-formatSeen nick msg "NICK" _    = unwords [nick, "changed nick to", msg]
-formatSeen _    _   _      _    = "did something unspeakable"
+formatSeen n m "PART" c = printf "%s left %s with the message \"%s\"" n c m
+formatSeen n _ "JOIN" c = printf "%s joined %s" n c
+formatSeen n m "QUIT" _ = printf "%s quit with the message \"%s\"" n m
+formatSeen n m "NICK" _ = printf "%s cged n to %s" n m
+formatSeen _ _ _      _ = "did something unspeakable" :: String
 
 timeAgo now before = concatTime . relTime . round $ diffUTCTime now before
 
@@ -118,7 +117,8 @@ relTime t | t <  s     = ["now"]
                 w = d * 7
 
 concatTime xss@(x:_) | x == "now"      = x
-                     | 1 == length xss = concat xss ++ " ago"
-                     | otherwise       = intercalate ", " (init xss)
-                                         ++ " and " ++ last xss ++ " ago"
+                     | 1 == length xss = printf "%s ago." (concat xss)
+                     | otherwise       = printf "%s and %s ago." (intercalate ", " $ init xss)
+                                                                 (last xss)
+
 concatTime [] = []
