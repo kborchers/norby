@@ -1,4 +1,7 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE NoMonomorphismRestriction,
+             ScopedTypeVariables,
+             UnicodeSyntax #-}
+
 module L where
 
 import           Control.Arrow
@@ -17,6 +20,7 @@ import           System
 import           System.IO
 import           System.Process
 import           System.Random
+import           Text.Regex
 
 interleave []     _  = []
 interleave (x:xs) ys = x : interleave ys xs
@@ -75,3 +79,7 @@ muu = "much unlike urself"
 
 trim = trim' . trim'
        where trim' = reverse . dropWhile isSpace
+
+-- Omg postfix function application so you can `car drive` instead of `drive car`!
+infixl 0 &
+x & f = f x

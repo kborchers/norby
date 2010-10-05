@@ -1,6 +1,8 @@
 Fix the cabal files
     Never done it, gotta find out how.
 
+Switch to extensible exceptions so GHC shuts up
+
 Add support for multiple channels
     The bot now replies to the channel the message originated from.
     Need to handle queries and stuff though.

@@ -2,8 +2,6 @@
 
 module Seen where
 
-import           Control.Monad
-import           Control.Monad.Trans (liftIO)
 import           Control.Monad.State
 import qualified Data.Bson as B
 import           Data.List hiding (sort, insert)
@@ -49,11 +47,14 @@ seen (Message (Just (NickName n _ _)) _ params) = do
      case conn of
           Left  _   -> return "MongoDB is down!"
           Right con -> do
-                Right res <- run con
-                            (findOne (select ["nick" =: Regex (mconcat [u"^", u (escape' nick), "$"]) "i"] "messages")
-                            { sort = ["date" =: (-1 :: Int)] })
+                Right res <- run con (findNick nick)
                 either (const $ return "Everyone died!")
                        (internet n nick) res
+     where findNick n = findOne (select
+                                ["nick" =: Regex
+                                          (mconcat [u"^", u (escape' n), "$"])
+                                          "i"]
+                                "messages") { sort = ["date" =: (-1 :: Int)] }
 
 seen (Message _ _ _) = return "nlogax fails at pattern matching."
 
@@ -118,9 +119,11 @@ relTime t | t <  s     = ["now"]
                 d = h * 24
                 w = d * 7
 
-concatTime xss@(x:xs) | x == "now"      = x
-                      | length xss == 1 = concat xss ++ " ago"
-                      | otherwise       = intercalate ", " (init xss) ++ " and " ++ last xss ++ " ago"
+concatTime xss@(x:_) | x == "now"      = x
+                     | length xss == 1 = concat xss ++ " ago"
+                     | otherwise       = intercalate ", " (init xss)
+                                         ++ " and " ++ last xss ++ " ago"
+
 concatTime [] = []
 
 rollDie :: State StdGen Int

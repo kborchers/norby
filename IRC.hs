@@ -19,7 +19,6 @@ import           Parser
 import qualified Seen as S
 import           System.Exit
 import           System.IO
-import           Text.ParserCombinators.Parsec hiding (letter)
 import           Types
 
 import qualified Utils as U
