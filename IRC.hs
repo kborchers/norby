@@ -9,8 +9,8 @@ module IRC (
 ) where
 
 import           Control.OldException (bracket_)
-import           Control.Monad
-import           Control.Monad.Reader          hiding (join)
+import           Control.Monad        hiding (join)
+import           Control.Monad.Reader hiding (join)
 import           Data.Either
 import           Data.List
 import qualified Eval as E
@@ -67,21 +67,26 @@ listen h = forever $ do
 -- Perform a command
 eval :: Message -> Net ()
 eval msg@(Message _ _ params@(p:_))
-   | ".join "  `isPrefixOf` lastPar = write $ Message Nothing "JOIN"
-                                              (take 1 . drop 1 $ words lastPar)
-   | ".part "  `isPrefixOf` lastPar = write $ Message Nothing "PART"
-                                              (take 1 . drop 1 $ words lastPar)
+   | ".join "  `isPrefixOf` lastPar = join (sndWord lastPar)
+   | ".part "  `isPrefixOf` lastPar = part (sndWord lastPar)
+   | ".gtfo "  `isPrefixOf` lastPar = quit ["LOL"]
    | "> "      `isPrefixOf` lastPar = eval' E.evalHsExt msg
    | ".type "  `isPrefixOf` lastPar = eval' E.typeOf msg
-   | ".gtfo "  `isPrefixOf` lastPar = write $ Message Nothing "QUIT" ["lol haahaha!"]
    | ".seen "  `isPrefixOf` lastPar = eval' S.seen msg
    | ".pf "    `isPrefixOf` lastPar = eval' E.pointFree msg
    | otherwise                      = return ()
    where eval' f msg = liftIO (f msg) >>= privmsg chan
          lastPar     = last params
+         sndWord     = take 1 . drop 1 . words
          chan        = p
 
 eval (Message _ _ _) = return ()
 
-privmsg :: String -> String -> Net ()
+privmsg :: Param -> Param -> Net ()
 privmsg c m = write $ Message Nothing "PRIVMSG" [c, U.excerpt' m]
+
+join ps = write $ Message Nothing "JOIN" ps
+
+part ps = write $ Message Nothing "PART" ps
+
+quit ps = write $ Message Nothing "QUIT" ps

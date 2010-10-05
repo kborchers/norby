@@ -39,7 +39,6 @@ store (Message (Just (NickName nick _ _)) command params) = do
 store (Message _ _ _) = return "LOL!!"
 
 -- What to do about this mess?
-seen :: Message -> IO String
 seen (Message (Just (NickName n _ _)) _ params) = do
      -- ".seen ultror  " -> "ultror"
      let nick = U.trim . unwords  . take 1 . drop 1 . words . last $ params
@@ -48,49 +47,48 @@ seen (Message (Just (NickName n _ _)) _ params) = do
           Left  _   -> return "MongoDB is down!"
           Right con -> do
                 Right res <- run con (findNick nick)
-                either (const $ return "Everyone died!")
-                       (internet n nick) res
-     where findNick n = findOne (select
-                                ["nick" =: Regex
-                                          (mconcat [u"^", u (escape' n), "$"])
-                                          "i"]
-                                "messages") { sort = ["date" =: (-1 :: Int)] }
+                either (const . return $ n ++ ": My tubes appear to be malfunctioning.")
+                       (result nick) res
+
+     where findNick n =
+                    findOne (select ["nick" =: Regex
+                            (mconcat [u"^", u (escape' n), "$"])
+                            "i"] "messages")
+                            { sort = ["_id" =: (-1 :: Int)] }
+           
+           result nick (Just val) = do
+                  now  <- getCurrentTime
+                  let  txt = B.at "text" val :: String
+                  let  cmd = B.at "what" val :: String
+                  let  chn = B.at "chan" val :: String
+                  let  whn = B.at "date" val :: UTCTime
+                  return $ n ++ unwords
+                           [":", formatSeen nick txt cmd chn,
+                            timeAgo now whn]
+           result nick Nothing = return $ unwords [n ++ ":", nick,
+                                                   "means nothing to me."]
 
 seen (Message _ _ _) = return "nlogax fails at pattern matching."
 
-escape :: Char -> String
 escape c | c `elem` regexChars = '\\' : [c]
          | otherwise = [c]
          where regexChars = "\\+()^$.{}]|"
-escape' []      = []
+escape' []     = []
 escape' (c:cs) = escape c ++ escape' cs
 
-internet n nick val = do
-  now  <- getCurrentTime
-  let  txt = ((B.lookup "text" $ fromMaybe [] val) :: Maybe String)
-  let  cmd = ((B.lookup "what" $ fromMaybe [] val) :: Maybe String)
-  let  chn = ((B.lookup "chan" $ fromMaybe [] val) :: Maybe String)
-  let  whn = ((B.lookup "date" $ fromMaybe [] val) :: Maybe UTCTime)
-  maybe (return $ n ++ unwords [":", nick, "means nothing to me."])
-        (\msg -> return $ n ++ concat [": ", formatSeen nick msg (maybe "" id cmd) chn,
-                          maybe "" ((' ' :) . timeAgo now) whn]) txt
-
-formatSeen nick msg "PRIVMSG" (Just chan)
+formatSeen nick msg "PRIVMSG" chan
     | "\SOHACTION" `isPrefixOf` msg = concat [nick, " was all like *", nick, " ",
                                               U.excerpt 60 "..." . init . drop 8 $ U.trim msg, "* in ", chan]
     | otherwise                     = concat [nick, " said \"",
                                               U.excerpt 60 "..." $ U.trim msg,
                                               "\" in ", chan]
 
-formatSeen nick msg "PART" (Just chan) = unwords [nick, "left", chan, "with the message:", msg]
-formatSeen nick _   "JOIN" (Just chan) = unwords [nick, "joined", chan]
-formatSeen nick msg "QUIT" _           = unwords [nick, "quit with the message:", msg]
-formatSeen nick msg "NICK" _           = unwords [nick, "changed nick to", msg]
-formatSeen _    _   _      _           = "did something unspeakable"
-
-secret chan | chan `elem` secretChans = "#SECRET"
-            | otherwise               = chan
-            where secretChans = ["#jquery-ot"]
+formatSeen nick msg "PART" chan = unwords [nick, "left", chan, "with the message", '"' : msg ++ "\""]
+formatSeen nick _   "JOIN" chan = unwords [nick, "joined", chan]
+formatSeen nick msg "QUIT" _    = unwords [nick, "quit with the message",
+                                           '"' : msg ++ "\""]
+formatSeen nick msg "NICK" _    = unwords [nick, "changed nick to", msg]
+formatSeen _    _   _      _    = "did something unspeakable"
 
 timeAgo now before = concatTime . relTime . round $ diffUTCTime now before
 
@@ -120,23 +118,7 @@ relTime t | t <  s     = ["now"]
                 w = d * 7
 
 concatTime xss@(x:_) | x == "now"      = x
-                     | length xss == 1 = concat xss ++ " ago"
+                     | 1 == length xss = concat xss ++ " ago"
                      | otherwise       = intercalate ", " (init xss)
                                          ++ " and " ++ last xss ++ " ago"
-
 concatTime [] = []
-
-rollDie :: State StdGen Int
-rollDie = do generator <- get
-             let (value, newGenerator) = randomR (1,6) generator
-             put newGenerator
-             return value
-
-{-
-punch :: Message -> String
-punch (Message (Just (NickName nick _ _)) _ params@(p:ps)) = "\SOHACTION punches " ++ hahaha ++ " in the face!\SOH"
-      where chan   = head ps
-            text   = last ps
-            target = takeWhile (/= ' ') . dropWhile (== ' ') . dropWhile (/= ' ') $ text
-            hahaha = if target == "ultror" then nick else target
--}
