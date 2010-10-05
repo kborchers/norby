@@ -47,13 +47,12 @@ seen (Message (Just (NickName n _ _)) _ params) = do
           Left  _   -> return "MongoDB is down!"
           Right con -> do
                 Right res <- run con (findNick nick)
-                either (const . return $ n ++ ": My tubes appear to be malfunctioning.")
+                either (const $ return "My tubes appear to be malfunctioning.")
                        (result nick) res
 
      where findNick n =
                     findOne (select ["nick" =: Regex
-                            (mconcat [u"^", u (escape' n), "$"])
-                            "i"] "messages")
+                            (mconcat [u"^", u (escape' n), "$"]) "i"] "messages")
                             { sort = ["_id" =: (-1 :: Int)] }
            
            result nick (Just val) = do

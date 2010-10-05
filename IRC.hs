@@ -1,5 +1,4 @@
 module IRC (
-  module Parser,
   Net,
   connect,
   listen,
