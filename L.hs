@@ -44,36 +44,41 @@ type Peen = String
 ben :: Int -> Peen
 ben = ('8' :) . (++ "D") . flip replicate '='
 
+gf :: Int -> String
 gf n | n <  0    = "NEGATIVE U"
      | n == 0    = "N'T U"
      | n <= 9000 = (unwords . replicate n) "NO" ++ " U"
      | otherwise = "It's over 9000!"
 
-ajpiano = "PANDEMONIUM!!!"
+ajpiano = "PANDEMONIUM!!!" :: String
 
+akahn :: String -> String
 akahn s | last s == '?' = "did you mean " ++ s
         | otherwise     = "that's not "   ++ s
 
+coldhead :: String -> String
 coldhead  s | null s    = ">: |"
             | otherwise = "these are truly the last " ++ s
 
-dabear = ("your mom " ++)
+dabear = ("your mom " ++) :: String -> String
 
+dytrivedi :: String -> String
 dytrivedi s | null s    = "my wife is happy"
             | otherwise = mappend "my wife is annoyed i spend so much time " s
 
-matjas = interleave "matjas" . enumFrom
+matjas = interleave "matjas" . enumFrom :: Char -> String
 
+miketaylr :: String -> String
 miketaylr s | null ts   = "here, let me open that... wait a minute, there's nothing there, you bitch!"
             | otherwise = unwords ["here, let me open that", s, "for you!"]
             where ts = trim s
 
-nlogax     = (++ "n't")
-paul_irish = ($) 
-sean       = "koole"
-seutje     = ("I would of " ++)
-temp01     = Just "awesome"
-vladikoff  = ("flod " ++) . (++ "!!")
+nlogax     = (++ "n't")               :: String -> String
+paul_irish = ($)                      :: (effin ->rad) -> effin -> rad
+sean       = "koole"                  :: String
+seutje     = ("I would of " ++)       :: String -> String
+temp01     = Just "awesome"           :: Maybe String
+vladikoff  = ("flod " ++) . (++ "!!") :: String -> String
 
 mlu = "much like urself"
 muu = "much unlike urself"

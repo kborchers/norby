@@ -76,16 +76,16 @@ escape' (c:cs) = escape c ++ escape' cs
 
 formatSeen nick msg "PRIVMSG" chan
     | "\SOHACTION" `isPrefixOf` msg = printf "%s was all like *%s %s* in %s" nick nick
-                                             (U.excerpt 60 "…" . init . drop 8 $ U.trim msg)
+                                             (U.excerpt 60 "..." . init . drop 8 $ U.trim msg)
                                              chan
     | otherwise                     = printf "%s said \"%s\" in %s" nick
-                                              (U.excerpt 60 "…" $ U.trim msg)
+                                              (U.excerpt 60 "..." $ U.trim msg)
                                               chan
 
 formatSeen n m "PART" c = printf "%s left %s with the message \"%s\"" n c m
 formatSeen n _ "JOIN" c = printf "%s joined %s" n c
 formatSeen n m "QUIT" _ = printf "%s quit with the message \"%s\"" n m
-formatSeen n m "NICK" _ = printf "%s cged n to %s" n m
+formatSeen n m "NICK" _ = printf "%s changed nick to %s" n m
 formatSeen _ _ _      _ = "did something unspeakable" :: String
 
 timeAgo now before = concatTime . relTime . round $ diffUTCTime now before
@@ -93,22 +93,18 @@ timeAgo now before = concatTime . relTime . round $ diffUTCTime now before
 relTime t | t <  s     = ["now"]
           | t == s     = ["1 second"]
           | t <  m     = [show t ++ " seconds"]
-          | t == m     = ["1 minute"]
           | t <  m * 2 = ["1 minute"]            ++ rest m
           | t <  h     = [first m ++ " minutes"] ++ rest m
-          | t == h     = ["1 hour"]
           | t <  h * 2 = ["1 hour"]              ++ rest h
           | t <  d     = [first h ++ " hours"]   ++ rest h
-          | t == d     = ["1 day"]
           | t <  d * 2 = ["1 day"]               ++ rest d
           | t <  w     = [first d ++ " days"]    ++ rest d
-          | t == w     = ["1 week"]
           | t <  w * 2 = ["1 week"]              ++ rest w
-          | t <  w * 4 = [first w ++ " weeks"]   ++ rest w
+          | t <  w * 8 = [first w ++ " weeks"]   ++ rest w
           | otherwise  = ["a long time"]
           where first  = show . div t
-                rest v | t `mod` v == 0 = []
-                       | otherwise      = relTime (mod t v)
+                rest v | mod t v == 0 = []
+                       | otherwise    = take 1 . relTime $ mod t v
                 s = 1
                 m = s * 60
                 h = m * 60
@@ -116,7 +112,7 @@ relTime t | t <  s     = ["now"]
                 w = d * 7
 
 concatTime xss@(x:_) | x == "now"      = x
-                     | 1 == length xss = printf "%s ago." (concat xss)
+                     | 1 == length xss = printf "%s ago" $ concat xss
                      | otherwise       = printf "%s and %s ago." (intercalate ", " $ init xss)
                                                                  (last xss)
 
