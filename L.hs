@@ -69,7 +69,7 @@ miketaylr s | null ts   = "here, let me open that... wait a minute, there's noth
             where ts = trim s
 
 nlogax     = (++ "n't")
-paul_irish = "ryan_irelan"
+paul_irish = ($) 
 sean       = "koole"
 seutje     = ("I would of " ++)
 temp01     = Just "awesome"
