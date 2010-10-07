@@ -44,6 +44,8 @@ type Peen = String
 ben :: Int -> Peen
 ben = ('8' :) . (++ "D") . flip replicate '='
 
+fap = fmap
+
 gf :: Int -> String
 gf n | n <  0    = "NEGATIVE U"
      | n == 0    = "N'T U"
@@ -74,7 +76,7 @@ miketaylr s | null ts   = "here, let me open that... wait a minute, there's noth
             where ts = trim s
 
 nlogax     = (++ "n't")               :: String -> String
-paul_irish = ($)                      :: (effin ->rad) -> effin -> rad
+paul_irish = ($)                      :: (effin -> rad) -> effin -> rad
 sean       = "koole"                  :: String
 seutje     = ("I would of " ++)       :: String -> String
 temp01     = Just "awesome"           :: Maybe String
@@ -86,6 +88,6 @@ muu = "much unlike urself"
 trim = trim' . trim'
        where trim' = reverse . dropWhile isSpace
 
--- Omg postfix function application so you can `car drive` instead of `drive car`!
+-- Omg postfix function application so you can `car & drive` instead of `drive car`!
 infixl 0 &
 x & f = f x

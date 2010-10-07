@@ -100,11 +100,11 @@ relTime t | t <  s     = ["now"]
           | t <  d * 2 = ["1 day"]               ++ rest d
           | t <  w     = [first d ++ " days"]    ++ rest d
           | t <  w * 2 = ["1 week"]              ++ rest w
-          | t <  w * 8 = [first w ++ " weeks"]   ++ rest w
+          | t <  w * 4 = [first w ++ " weeks"]   ++ rest w
           | otherwise  = ["a long time"]
           where first  = show . div t
                 rest v | mod t v == 0 = []
-                       | otherwise    = take 1 . relTime $ mod t v
+                       | otherwise    = relTime $ mod t v
                 s = 1
                 m = s * 60
                 h = m * 60
@@ -112,8 +112,7 @@ relTime t | t <  s     = ["now"]
                 w = d * 7
 
 concatTime xss@(x:_) | x == "now"      = x
-                     | 1 == length xss = printf "%s ago" $ concat xss
+                     | 1 == length xss = printf "%s ago." $ concat xss
                      | otherwise       = printf "%s and %s ago." (intercalate ", " $ init xss)
-                                                                 (last xss)
-
+                                                                 $ last xss
 concatTime [] = []

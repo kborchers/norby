@@ -16,6 +16,7 @@ import qualified Eval as E
 import           Network
 import           Parser
 import qualified Seen as S
+import           Settings
 import           System.Exit
 import           System.IO
 import           Types
@@ -65,19 +66,19 @@ listen h = forever $ do
 
 -- Perform a command
 eval :: Message -> Net ()
-eval msg@(Message _ _ params@(p:_))
-   | ".join "  `isPrefixOf` lastPar = join (sndWord lastPar)
-   | ".part "  `isPrefixOf` lastPar = part (sndWord lastPar)
-   | ".gtfo "  `isPrefixOf` lastPar = quit ["LOL"]
-   | "> "      `isPrefixOf` lastPar = eval' E.evalHsExt msg
-   | ".type "  `isPrefixOf` lastPar = eval' E.typeOf msg
-   | ".seen "  `isPrefixOf` lastPar = eval' S.seen msg
-   | ".pf "    `isPrefixOf` lastPar = eval' E.pointFree msg
-   | otherwise                      = return ()
-   where eval' f msg = liftIO (f msg) >>= privmsg chan
-         lastPar     = last params
+eval msg@(Message (Just (NickName nn _ _)) _ ps@(p:_))
+   | ".join "  `isPrefixOf` lastp = join (sndWord lastp)
+   | ".part "  `isPrefixOf` lastp = part (sndWord lastp)
+   | ".gtfo "  `isPrefixOf` lastp = quit ["LOL"]
+   | "> "      `isPrefixOf` lastp = eval' E.evalHsExt msg
+   | ".type "  `isPrefixOf` lastp = eval' E.typeOf msg
+   | ".seen "  `isPrefixOf` lastp = eval' S.seen msg
+   | ".pf "    `isPrefixOf` lastp = eval' E.pointFree msg
+   | otherwise                    = return ()
+   where eval' f msg = liftIO (f msg) >>= privmsg target
+         lastp       = last ps
          sndWord     = take 1 . drop 1 . words
-         chan        = p
+         target      = if p == nick then nn else p -- Ugly
 
 eval (Message _ _ _) = return ()
 

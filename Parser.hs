@@ -1,4 +1,4 @@
-module Parser where
+module Parser (parseMessage) where
 
 import           Data.Maybe
 import           Text.ParserCombinators.Parsec hiding (letter, space)
