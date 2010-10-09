@@ -2,14 +2,13 @@
 
 module Seen where
 
-import           Control.Monad.State
 import qualified Data.Bson as B
 import           Data.List hiding (sort, insert)
-import           Data.Maybe
 import           Data.Monoid
 import           Data.Time
 import           Data.UString (u)
 import           Database.MongoDB
+import qualified Settings as S
 import           Text.Printf
 import           Types
 
@@ -17,45 +16,40 @@ import qualified Utils as U
 
 hostIP = "127.0.0.1"
 dbName = "seen"
+collection = "messages"
 
-run = (runNet .) . flip (runConn . useDb dbName)
+run c d    = runNet $ runConn (useDb dbName d) c
 connectDb  = runNet . connect $ host hostIP
 
-store :: Message -> IO String
-store (Message (Just (NickName nick _ _)) command params) = do
+store (Message (Just (NickName nick _ _)) cmd params) = do
       conn <- connectDb
       now  <- getCurrentTime
       let mess = last params
       let chan = head params
-      let message = ["nick" =: nick,
-                     "text" =: mess,
-                     "what" =: command,
-                     "chan" =: chan,
-                     "date" =: now]
+      let message = ["nick" =: nick, "text" =: mess, "what" =: cmd,
+                     "chan" =: chan, "date" =: now]
       either (const $ return "MongoDB is down!")
-             (\con -> run con (insert "messages" message) >> return "Stored.")
+             ((>> return "Stored.") . flip run (insert collection message))
              conn
 
-store (Message _ _ _) = return "LOL!!"
+store (Message _ _ _) = return "LOL!!" :: IO String
 
--- What to do about this mess?
-seen (Message (Just (NickName n _ _)) _ params) = do
-     -- ".seen ultror  " -> "ultror"
-     let nick = U.trim . unwords  . take 1 . drop 1 . words . last $ params
-     conn <- connectDb
-     case conn of
-          Left  _   -> return "MongoDB is down!"
-          Right con -> do
-                Right res <- run con (findNick nick)
-                either (const $ return "My tubes appear to be malfunctioning.")
-                       (result nick) res
-
+seen (Message (Just (NickName n _ _)) _ params)
+    | n    == nick   = return $ printf "%s: That's you, I see you in %s right now." n chan
+    | nick == S.nick = return $ printf "%s: That's me, I am here in %s." n chan
+    | otherwise      = do
+        conn <- connectDb
+        either (const $ return "MongoDB is down!")
+               (\c -> run c (findNick nick) >>= \a -> case a of
+                      Right (Right v) -> result v
+                      _               -> return "Kasplode") conn
+     
      where findNick n =
                     findOne (select ["nick" =: Regex
-                            (mconcat [u"^", u (escape' n), "$"]) "i"] "messages")
+                            (mconcat [u"^", u (escape' n), "$"]) "i"] collection)
                             { sort = ["_id" =: (-1 :: Int)] }
            
-           result nick (Just val) = do
+           result (Just val) = do
                   now <- getCurrentTime
                   let txt = B.at "text" val :: String
                   let cmd = B.at "what" val :: String
@@ -63,8 +57,11 @@ seen (Message (Just (NickName n _ _)) _ params) = do
                   let whn = B.at "date" val :: UTCTime
                   return $ printf "%s: %s %s" n (formatSeen nick txt cmd chn)
                                                 (timeAgo now whn)
-           result nick Nothing = return $
-                                 printf "%s: %s means nothing to me." n nick
+           result Nothing = return $
+                            printf "%s: %s means nothing to me." n nick
+           timeAgo = ((concatTime . relTime . round) .) . diffUTCTime
+           nick = U.trim . concat . take 1 . drop 1 . words . last $ params
+           chan = concat $ take 1 params
 
 seen (Message _ _ _) = return "nlogax fails at pattern matching."
 
@@ -76,19 +73,18 @@ escape' (c:cs) = escape c ++ escape' cs
 
 formatSeen nick msg "PRIVMSG" chan
     | "\SOHACTION" `isPrefixOf` msg = printf "%s was all like *%s %s* in %s" nick nick
-                                             (U.excerpt 60 "..." . init . drop 8 $ U.trim msg)
+                                             (U.excerpt' . init . drop 8 $ U.trim msg)
                                              chan
-    | otherwise                     = printf "%s said \"%s\" in %s" nick
-                                              (U.excerpt 60 "..." $ U.trim msg)
-                                              chan
+    | otherwise = printf "%s said \"%s\" in %s" nick
+                         (U.excerpt' $ U.trim msg) chan
 
-formatSeen n m "PART" c = printf "%s left %s with the message \"%s\"" n c m
-formatSeen n _ "JOIN" c = printf "%s joined %s" n c
-formatSeen n m "QUIT" _ = printf "%s quit with the message \"%s\"" n m
-formatSeen n m "NICK" _ = printf "%s changed nick to %s" n m
-formatSeen _ _ _      _ = "did something unspeakable" :: String
-
-timeAgo now before = concatTime . relTime . round $ diffUTCTime now before
+formatSeen n m cmd c = case cmd of
+    "PART" -> printf "%s left %s with the message \"%s\"" n c m'
+    "JOIN" -> printf "%s joined %s" n c
+    "QUIT" -> printf "%s quit with the message \"%s\"" n m'
+    "NICK" -> printf "%s changed nick to %s" n m
+    _      -> "did something unspeakable" :: String
+    where m' = U.excerpt' $ U.trim m
 
 relTime t | t <  s     = ["now"]
           | t == s     = ["1 second"]
@@ -105,14 +101,11 @@ relTime t | t <  s     = ["now"]
           where first  = show . div t
                 rest v | mod t v == 0 = []
                        | otherwise    = relTime $ mod t v
-                s = 1
-                m = s * 60
-                h = m * 60
-                d = h * 24
-                w = d * 7
+                s = 1; m = s * 60; h = m * 60; d = h * 24; w = d * 7
 
 concatTime xss@(x:_) | x == "now"      = x
                      | 1 == length xss = printf "%s ago." $ concat xss
-                     | otherwise       = printf "%s and %s ago." (intercalate ", " $ init xss)
-                                                                 $ last xss
+                     | otherwise       = printf "%s and %s ago."
+                                                (intercalate ", " $ init xss)
+                                                                  $ last xss
 concatTime [] = []

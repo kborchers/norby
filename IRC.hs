@@ -71,9 +71,10 @@ eval msg@(Message (Just (NickName nn _ _)) _ ps@(p:_))
    | ".part "  `isPrefixOf` lastp = part (sndWord lastp)
    | ".gtfo "  `isPrefixOf` lastp = quit ["LOL"]
    | "> "      `isPrefixOf` lastp = eval' E.evalHsExt msg
-   | ".type "  `isPrefixOf` lastp = eval' E.typeOf msg
-   | ".seen "  `isPrefixOf` lastp = eval' S.seen msg
+   | ".type "  `isPrefixOf` lastp = eval' E.typeOf    msg
+   | ".seen "  `isPrefixOf` lastp = eval' S.seen      msg
    | ".pf "    `isPrefixOf` lastp = eval' E.pointFree msg
+   | ".unpf "  `isPrefixOf` lastp = eval' E.pointFul  msg
    | otherwise                    = return ()
    where eval' f msg = liftIO (f msg) >>= privmsg target
          lastp       = last ps

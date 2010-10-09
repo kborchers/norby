@@ -55,8 +55,10 @@ gf n | n <  0    = "NEGATIVE U"
 ajpiano = "PANDEMONIUM!!!" :: String
 
 akahn :: String -> String
-akahn s | last s == '?' = "did you mean " ++ s
-        | otherwise     = "that's not "   ++ s
+akahn s | null ts            = "that ain't shit"
+        | "?" `isSuffixOf` s = "did you mean " ++ s
+        | otherwise          = "that's not "   ++ s
+        where ts = trim s
 
 coldhead :: String -> String
 coldhead  s | null s    = ">: |"
@@ -87,6 +89,8 @@ muu = "much unlike urself"
 
 trim = trim' . trim'
        where trim' = reverse . dropWhile isSpace
+
+dropInit = take 1 . reverse
 
 -- Omg postfix function application so you can `car & drive` instead of `drive car`!
 infixl 0 &

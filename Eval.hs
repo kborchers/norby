@@ -62,7 +62,12 @@ niceErrors = excerpt' . intercalate " " . concatMap lines . fmap I.errMsg
 
 -- Pointfree refactoring
 pointFree :: Message -> IO String
-pointFree (Message _ _ params) = do
+pointFree = pointy "pointfree"
+
+pointFul :: Message -> IO String
+pointFul = pointy "pointful"
+
+pointy p (Message _ _ params) = do
     let expr = trim . dropWhile (not . isSpace) $ last params
-    (_, out, _) <- liftIO $ readProcessWithExitCode "pointfree" [expr] ""
+    (_, out, _) <- liftIO $ readProcessWithExitCode p [expr] ""
     return . intercalate " " $ lines out
