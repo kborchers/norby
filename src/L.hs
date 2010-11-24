@@ -4,6 +4,7 @@
 
 module L where
 
+import           Control.Applicative
 import           Control.Arrow
 import           Control.Monad
 import           Control.Monad.State
@@ -12,6 +13,7 @@ import           Data.Char
 import           Data.Function
 import           Data.Functor
 import           Data.List
+import           Data.List.Split
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Ratio
@@ -41,8 +43,8 @@ oOo [] = [];
 oOo s  = concat [init s, [toUpper (last s)], tail (reverse s)]
 
 type Peen = String
-ben :: Int -> Peen
-ben = ('8' :) . (++ "D") . flip replicate '='
+ben :: Integer -> Peen
+ben = ('8' :) . (++ "D") . flip genericReplicate '='
 
 fap = fmap
 
@@ -54,11 +56,9 @@ gf n | n <  0    = "NEGATIVE U"
 
 ajpiano = "PANDEMONIUM!!!" :: String
 
-akahn :: String -> String
-akahn s | null ts            = "that ain't shit"
-        | "?" `isSuffixOf` s = "did you mean " ++ s
-        | otherwise          = "that's not "   ++ s
-        where ts = trim s
+akahn :: Integer -> String
+akahn 0 = "akahn :)"
+akahn n = "AK" ++ genericReplicate n 'A' ++ "HN!!"
 
 coldhead :: String -> String
 coldhead  s | null s    = ">: |"
@@ -79,6 +79,7 @@ miketaylr s | null ts   = "here, let me open that... wait a minute, there's noth
 
 nlogax     = (++ "n't")               :: String -> String
 paul_irish = ($)                      :: (effin -> rad) -> effin -> rad
+rwaldron   = (++ ". Questions?")      :: String -> String
 sean       = "koole"                  :: String
 seutje     = ("I would of " ++)       :: String -> String
 temp01     = Just "awesome"           :: Maybe String
@@ -92,6 +93,33 @@ trim = trim' . trim'
 
 dropInit = take 1 . reverse
 
+relTime t | t <  s     = ["now"]
+          | t == s     = ["1 second"]
+          | t <  m     = [show t ++ " seconds"]
+          | t <  m * 2 = ["1 minute"]            ++ rest m
+          | t <  h     = [first m ++ " minutes"] ++ rest m
+          | t <  h * 2 = ["1 hour"]              ++ rest h
+          | t <  d     = [first h ++ " hours"]   ++ rest h
+          | t <  d * 2 = ["1 day"]               ++ rest d
+          | t <  w     = [first d ++ " days"]    ++ rest d
+          | t <  w * 2 = ["1 week"]              ++ rest w
+          | t <  w * 4 = [first w ++ " weeks"]   ++ rest w
+          | otherwise  = ["a long time"]
+          where first  = show . div t
+                rest v | mod t v == 0 = []
+                       | otherwise    = relTime $ mod t v
+                s = 1; m = s * 60; h = m * 60; d = h * 24; w = d * 7
+
+concatTime [] = []
+concatTime xss@(x:_) | x == "now"      = x
+                     | 1 == length xss = printf "%s ago." $ concat xss
+                     | otherwise       = printf "%s and %s ago."
+                                                (intercalate ", " $ init xss)
+                                                                  $ last xss
+
 -- Omg postfix function application so you can `car & drive` instead of `drive car`!
 infixl 0 &
 x & f = f x
+
+ftoc t = 5/9 * (t - 32)
+ctof t = (9/5 * t) + 32

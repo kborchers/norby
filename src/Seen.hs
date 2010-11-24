@@ -73,10 +73,10 @@ escape' (c:cs) = escape c ++ escape' cs
 
 formatSeen nick msg "PRIVMSG" chan
     | "\SOHACTION" `isPrefixOf` msg = printf "%s was all like *%s %s* in %s" nick nick
-                                             (U.excerpt' . init . drop 8 $ U.trim msg)
+                                             (U.excerpt 100 "..." . init . drop 8 $ U.trim msg)
                                              chan
     | otherwise = printf "%s said \"%s\" in %s" nick
-                         (U.excerpt' $ U.trim msg) chan
+                         (U.excerpt 100 "..." $ U.trim msg) chan
 
 formatSeen n m cmd c = case cmd of
     "PART" -> printf "%s left %s"   n c

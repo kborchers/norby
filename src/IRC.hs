@@ -32,9 +32,10 @@ socket (Bot h) = h
 
 -- Connect to the server and return the initial bot state
 connect :: String -> Int -> IO Bot
-connect s p = notify $ (connectTo s . PortNumber $ fromIntegral p)
-                        >>= ap ((>> return) . const
-                                  . flip hSetBuffering NoBuffering) Bot
+connect s p = notify $ do
+    h <- connectTo s $ PortNumber (fromIntegral p)
+    hSetBuffering h NoBuffering
+    return $ Bot h
     where notify a = bracket_
                     (print ("Connecting to " ++ s ++ "...") >> hFlush stdout)
                     (print "It is so.") a
@@ -42,9 +43,11 @@ connect s p = notify $ (connectTo s . PortNumber $ fromIntegral p)
 -- write $ Message (Maybe ett prefix) Command [parametrar]
 -- write $ Message Nothing "LOL" ["nyeyhehe"]
 write :: Message -> Net ()
-write msg = asks socket >>= \h -> liftIO $ hPrint h msg
-                        >> S.store msg
-                        >> (putStrLn $ "sent: " ++ (show msg))
+write msg = do
+    h <- asks socket
+    liftIO $ hPrint h msg
+    liftIO $ S.store  msg
+    liftIO . putStrLn $ "sent: " ++ (show msg)
 
 -- Process lines from the server
 listen :: Handle -> Net ()
@@ -80,7 +83,5 @@ privmsg :: Param -> Param -> Net ()
 privmsg c m = write $ Message Nothing "PRIVMSG" [c, U.excerpt' m]
 
 join ps = write $ Message Nothing "JOIN" ps
-
 part ps = write $ Message Nothing "PART" ps
-
 quit ps = write $ Message Nothing "QUIT" ps

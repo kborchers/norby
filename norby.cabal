@@ -44,11 +44,21 @@ Cabal-version:       >=1.2
 
 
 Executable norby
+  hs-source-dirs: src
   -- .hs or .lhs file containing the Main module.
   Main-is:             Main.hs
   
   -- Packages needed in order to build this package.
-  Build-depends:       Mueval >= 0.8 <= 1.0
+  Build-depends:       base >= 4 && < 5
+  Build-depends:       bson >= 0.0.3 && <= 0.1
+  Build-depends:       hint >= 0.3 && <= 1.0
+  Build-depends:       monads-fd >= 0.1 && <= 1.0
+  Build-depends:       mongoDB >= 0.7 && <= 1.0
+  Build-depends:       mueval >= 0.8 && <= 1.0
+  Build-depends:       network >= 2.2 && <= 2.3
+  Build-depends:       parsec >= 2.0 && <= 3.0
+  Build-depends:       process >= 1.0 && <= 2.0
+  Build-depends:       time >= 1.1.4 && <= 1.2
   
   -- Modules not exported by this package.
   -- Other-modules:       

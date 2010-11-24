@@ -5,7 +5,7 @@ import           Text.ParserCombinators.Parsec hiding (letter, space)
 import           Types
 
 parseMessage :: String -> Maybe Message
-parseMessage s = either (const Nothing) Just (parse message "" s)
+parseMessage s = either (const Nothing) Just (parse message "Message" s)
 
 message = do
   p  <- optionMaybe (char ':' >> prefix >>= (space >>) . return)

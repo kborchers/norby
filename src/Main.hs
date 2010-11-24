@@ -18,7 +18,7 @@ main = bracket (connect server port) disconnect loop
 -- Join some channels, and start processing commands
 run :: Net ()
 run = do
-    write $ Message Nothing "USER" [nick, "0", "*", name]
     write $ Message Nothing "NICK" [nick]
+    write $ Message Nothing "USER" [nick, "0", "*", name]
     write $ Message Nothing "JOIN" [channels]
     asks socket >>= listen
