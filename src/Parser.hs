@@ -21,7 +21,7 @@ middle   = many1 nonWhite
 trailing = many $ noneOf "\NUL\CR\LF"
 
 crlf = string "\CR\LF"
-host = many1 $ noneOf " @!"
+host = many1 $ noneOf " @!" -- Get a real one
 nick = many1 (letter <|> number <|> special)
 
 nickPrefix = do
