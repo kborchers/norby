@@ -103,7 +103,7 @@ relTime t | t <  s     = ["now"]
                        | otherwise    = relTime $ mod t v
                 s = 1; m = s * 60; h = m * 60; d = h * 24; w = d * 7
 
-concatTime xss@(x:_) | null xss        = xss
+concatTime xss@(x:_) | null xss        = []
                      | x == "now"      = x
                      | 1 == length xss = printf "%s ago." $ concat xss
                      | otherwise       = printf "%s and %s ago."

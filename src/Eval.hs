@@ -15,7 +15,7 @@ import           System.Process
 import           Types
 import           Utils
 
-hsFile = "L"
+hsFile = "L" -- A bit dumb, relies on the current working directory
 
 -- Call out to the mueval binary
 evalHsExt :: Message -> IO String

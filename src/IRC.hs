@@ -63,19 +63,20 @@ listen h = forever $ do
 -- Perform a command
 eval :: Message -> Net ()
 eval msg@(Message (Just (NickName nn _ _)) _ ps@(p:_))
-   | ".join "  `isPrefixOf` lastp = join (sndWord lastp)
-   | ".part "  `isPrefixOf` lastp = part (sndWord lastp)
-   | ".gtfo "  `isPrefixOf` lastp = quit ["LOL"]
-   | "> "      `isPrefixOf` lastp = eval' E.evalHsExt msg
-   | ".type "  `isPrefixOf` lastp = eval' E.typeOf    msg
-   | ".seen "  `isPrefixOf` lastp = eval' S.seen      msg
-   | ".pf "    `isPrefixOf` lastp = eval' E.pointFree msg
-   | ".unpf "  `isPrefixOf` lastp = eval' E.pointFul  msg
-   | otherwise                    = return ()
-   where eval' f msg = liftIO (f msg) >>= privmsg target
-         lastp       = last ps
-         sndWord     = take 1 . drop 1 . words
-         target      = if p == nick then nn else p -- Ugly
+   | match ".join"  = join (sndWord lastParam)
+   | match ".part"  = part (sndWord lastParam)
+   | match ".gtfo"  = quit ["LOL"]
+   | match ">"      = cmd E.evalHsExt msg
+   | match ".type"  = cmd E.typeOf    msg
+   | match ".seen"  = cmd S.seen      msg
+   | match ".pf"    = cmd E.pointFree msg
+   | match ".unpf"  = cmd E.pointFul  msg
+   | otherwise        = return ()
+   where cmd f msg = liftIO (f msg) >>= privmsg target
+         lastParam = last ps
+         match s   = (s ++ " ") `isPrefixOf` lastParam
+         target | p == nick = nn
+                | otherwise = p
 
 eval (Message _ _ _) = return ()
 
@@ -85,3 +86,5 @@ privmsg c m = write $ Message Nothing "PRIVMSG" [c, U.excerpt' m]
 join ps = write $ Message Nothing "JOIN" ps
 part ps = write $ Message Nothing "PART" ps
 quit ps = write $ Message Nothing "QUIT" ps
+
+sndWord = take 1 . drop 1 . words
