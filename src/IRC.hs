@@ -46,7 +46,7 @@ listen :: Handle -> Net ()
 listen h = do
     s <- fmap init . liftIO $ hGetLine h
     let Just msg = parseMessage s -- Uh oh! NON-EXHAUSTIVE PATTERNS
-    liftIO ((putStrLn $ "got:  " ++ s) >> S.store msg) -- Store every message in MongoDB
+    _ <- liftIO ((putStrLn $ "got:  " ++ s) >> S.store msg) -- Store every message in MongoDB
     eval msg
 
 -- Decide what to do
@@ -56,13 +56,13 @@ eval msg@(Message (Just (NickName nn _ _)) _ ps@(p:_))
    | match ".join"  = join (sndWord lastParam)
    | match ".part"  = part (sndWord lastParam)
    | match ".gtfo"  = quit ["LOL"]
-   | match ">"      = cmd E.evalHsExt msg
-   | match ".type"  = cmd E.typeOf    msg
-   | match ".seen"  = cmd S.seen      msg
-   | match ".pf"    = cmd E.pointFree msg
-   | match ".unpf"  = cmd E.pointFul  msg
+   | match ">"      = command E.evalHsExt
+   | match ".type"  = command E.typeOf
+   | match ".seen"  = command S.seen
+   | match ".pf"    = command E.pointFree
+   | match ".unpf"  = command E.pointFul
    | otherwise      = return ()
-   where cmd f msg  = liftIO (f msg) >>= privmsg target
+   where command f  = liftIO (f msg) >>= privmsg target
          lastParam  = last ps
          match s    = (s ++ " ") `isPrefixOf` lastParam
          target | p == nick = nn
@@ -73,8 +73,12 @@ eval (Message _ _ _) = return ()
 privmsg :: Param -> Param -> Net ()
 privmsg c m = write $ Message Nothing "PRIVMSG" [c, U.excerpt' m]
 
-join ps = write $ Message Nothing "JOIN" ps
-part ps = write $ Message Nothing "PART" ps
-quit ps = write $ Message Nothing "QUIT" ps
+join :: Params -> Net ()
+join = write . Message Nothing "JOIN"
+part :: Params -> Net ()
+part = write . Message Nothing "PART"
+quit :: Params -> Net ()
+quit = write . Message Nothing "QUIT"
 
+sndWord :: String -> [String]
 sndWord = take 1 . drop 1 . words

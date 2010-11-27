@@ -15,4 +15,5 @@ excerpt :: Int -> String -> String -> String
 excerpt len end s | null $ drop len s = s -- Don't check the length of `s`!
                   | otherwise         = take (len - length end) s ++ end
 
+excerpt' :: String -> String
 excerpt' = excerpt 200 "..."
