@@ -43,7 +43,7 @@ write msg = asks socket >>= \h -> liftIO $ hPrint h msg
 
 -- Process lines from the server
 listen :: Handle -> Net ()
-listen h = do
+listen h = forever $ do
     s <- fmap init . liftIO $ hGetLine h
     let Just msg = parseMessage s -- Uh oh! NON-EXHAUSTIVE PATTERNS
     _ <- liftIO ((putStrLn $ "got:  " ++ s) >> S.store msg) -- Store every message in MongoDB
