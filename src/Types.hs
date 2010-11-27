@@ -32,8 +32,6 @@ instance Show Prefix where
                               ++ maybe "" ('!' :) user
                               ++ maybe "" ('@' :) server
 
--- TODO: Can colon-prefixed params only come last?
---       What if other params contain spaces? Asplode?
 paramize :: Params -> String
 paramize []  = ""
 paramize [x] = ':' : x

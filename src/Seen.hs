@@ -71,6 +71,7 @@ escape c | c `elem` regexChars = '\\' : [c]
 escape' []     = []
 escape' (c:cs) = escape c ++ escape' cs
 
+formatSeen :: String -> String -> String -> String -> String
 formatSeen nick msg "PRIVMSG" chan
     | "\SOHACTION" `isPrefixOf` msg = printf "%s was all like *%s %s* in %s" nick nick
                                              (U.excerpt 100 "..." . init . drop 8 $ U.trim msg)
@@ -83,7 +84,7 @@ formatSeen n m cmd c = case cmd of
     "JOIN" -> printf "%s joined %s" n c
     "QUIT" -> printf "%s quit with the message \"%s\"" n m'
     "NICK" -> printf "%s changed nick to %s" n m
-    _      -> "did something unspeakable" :: String
+    _      -> printf "%s did something unspeakable"
     where m' = U.excerpt' $ U.trim m
 
 relTime t | t <  s     = ["now"]
@@ -103,8 +104,8 @@ relTime t | t <  s     = ["now"]
                        | otherwise    = relTime $ mod t v
                 s = 1; m = s * 60; h = m * 60; d = h * 24; w = d * 7
 
-concatTime xss@(x:_) | null xss        = []
-                     | x == "now"      = x
+concatTime []        = []
+concatTime xss@(x:_) | x == "now"      = x
                      | 1 == length xss = printf "%s ago." $ concat xss
                      | otherwise       = printf "%s and %s ago."
                                                 (intercalate ", " $ init xss)

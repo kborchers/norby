@@ -2,7 +2,7 @@
 module Utils where
 
 import           Data.Char
-import           Data.List
+--import           Data.List
 
 -- * String utilities
 trim :: String -> String

@@ -7,17 +7,14 @@ module IRC (
   write
 ) where
 
-import           Control.OldException (bracket_)
-import           Control.Monad        hiding (join)
+import           Control.Exception (bracket_)
 import           Control.Monad.Reader hiding (join)
-import           Data.Either
 import           Data.List
 import qualified Eval as E
 import           Network
 import           Parser
 import qualified Seen as S
 import           Settings
-import           System.Exit
 import           System.IO
 import           Types
 
@@ -40,28 +37,21 @@ connect s p = notify $ do
                     (print ("Connecting to " ++ s ++ "...") >> hFlush stdout)
                     (print "It is so.") a
 
--- write $ Message (Maybe ett prefix) Command [parametrar]
--- write $ Message Nothing "LOL" ["nyeyhehe"]
 write :: Message -> Net ()
-write msg = do
-    h <- asks socket
-    liftIO $ hPrint h msg
-    liftIO $ S.store  msg
-    liftIO . putStrLn $ "sent: " ++ (show msg)
+write msg = asks socket >>= \h -> liftIO $ hPrint h msg
+                        >> S.store msg >> putStrLn ("sent: " ++ (show msg))
 
 -- Process lines from the server
 listen :: Handle -> Net ()
-listen h = forever $ do
-    s <- init `fmap` liftIO (hGetLine h)
-    let Just msg = parseMessage s -- Uh oh!
-    liftIO . putStrLn $ "got:  " ++ s
-    liftIO $ S.store msg -- Store every message in MongoDB
-    ping msg
-    where ping (Message _ "PING" p) = write $ Message Nothing "PONG" p
-          ping message              = eval message
+listen h = do
+    s <- fmap init . liftIO $ hGetLine h
+    let Just msg = parseMessage s -- Uh oh! NON-EXHAUSTIVE PATTERNS
+    liftIO ((putStrLn $ "got:  " ++ s) >> S.store msg) -- Store every message in MongoDB
+    eval msg
 
--- Perform a command
+-- Decide what to do
 eval :: Message -> Net ()
+eval (Message _ "PING" p) = write $ Message Nothing "PONG" p
 eval msg@(Message (Just (NickName nn _ _)) _ ps@(p:_))
    | match ".join"  = join (sndWord lastParam)
    | match ".part"  = part (sndWord lastParam)
@@ -71,10 +61,10 @@ eval msg@(Message (Just (NickName nn _ _)) _ ps@(p:_))
    | match ".seen"  = cmd S.seen      msg
    | match ".pf"    = cmd E.pointFree msg
    | match ".unpf"  = cmd E.pointFul  msg
-   | otherwise        = return ()
-   where cmd f msg = liftIO (f msg) >>= privmsg target
-         lastParam = last ps
-         match s   = (s ++ " ") `isPrefixOf` lastParam
+   | otherwise      = return ()
+   where cmd f msg  = liftIO (f msg) >>= privmsg target
+         lastParam  = last ps
+         match s    = (s ++ " ") `isPrefixOf` lastParam
          target | p == nick = nn
                 | otherwise = p
 

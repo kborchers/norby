@@ -1,6 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
-
-import           Control.OldException
+import           Control.Exception
 import           Control.Monad.Reader hiding (join)
 import           Prelude hiding (catch)
 import           System.IO
@@ -13,12 +11,13 @@ import           Types
 main :: IO ()
 main = bracket (connect server port) disconnect loop
        where disconnect = hClose . socket
-             loop st    = catch (runReaderT run st) (const $ return ())
+             loop st    = (catch :: IO a -> (IOException -> IO a) -> IO a)
+                          (runReaderT run st) (const $ return ())
 
 -- Join some channels, and start processing commands
 run :: Net ()
 run = do
-    write $ Message Nothing "NICK" [nick]
-    write $ Message Nothing "USER" [nick, "0", "*", name]
-    write $ Message Nothing "JOIN" [channels]
-    asks socket >>= listen
+    mapM_ write [ Message Nothing "NICK" [nick]
+                , Message Nothing "USER" [nick, "0", "*", name]
+                , Message Nothing "JOIN" [channels] ]
+    asks socket >>= forever listen

@@ -1,14 +1,10 @@
-{-# LANGUAGE NoMonomorphismRestriction,
-             ScopedTypeVariables,
-             UnicodeSyntax #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 module L where
 
 import           Control.Applicative
 import           Control.Arrow
 import           Control.Monad
-import           Control.Monad.State
-import           Control.Monad.Trans
 import           Data.Char
 import           Data.Function
 import           Data.Functor
@@ -18,10 +14,6 @@ import           Data.Maybe
 import           Data.Monoid
 import           Data.Ratio
 import           Numeric
-import           System
-import           System.IO
-import           System.Process
-import           System.Random
 import           Text.Printf
 import           Text.Regex
 
