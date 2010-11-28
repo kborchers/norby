@@ -7,7 +7,7 @@ import           Data.List hiding (sort, insert)
 import           Data.Monoid
 import           Data.Time
 import           Data.UString (u)
-import           Database.MongoDB
+import           Database.MongoDB hiding (rest)
 import qualified Settings as S
 import           Text.Printf
 import           Types
@@ -19,8 +19,10 @@ dbName = "seen"
 collection = "messages"
 
 run c d    = runNet $ runConn (useDb dbName d) c
+
 connectDb  = runNet . connect $ host hostIP
 
+store :: Message -> IO String
 store (Message (Just (NickName nick _ _)) cmd params) = do
       conn <- connectDb
       now  <- getCurrentTime
@@ -44,19 +46,20 @@ seen (Message (Just (NickName n _ _)) _ params)
                       Right (Right v) -> result v
                       _               -> return "Kasplode") conn
      
-     where findNick n =
+     where findNick nn =
                     findOne (select ["nick" =: Regex
-                            (mconcat [u"^", u (escape' n), "$"]) "i"] collection)
+                            (mconcat [u"^", u (escape nn), "$"]) "i"] collection)
                             { sort = ["_id" =: (-1 :: Int)] }
            
-           result (Just val) = do
+           result (Just v) = do
                   now <- getCurrentTime
-                  let txt = B.at "text" val :: String
-                  let cmd = B.at "what" val :: String
-                  let chn = B.at "chan" val :: String
-                  let whn = B.at "date" val :: UTCTime
-                  return $ printf "%s: %s %s" n (formatSeen nick txt cmd chn)
-                                                (timeAgo now whn)
+                  let txt = B.at "text" v :: String
+                  let cmd = B.at "what" v :: String
+                  let chn = B.at "chan" v :: String
+                  let whn = B.at "date" v :: UTCTime
+                  return $ printf "%s: %s was seen %s, %s" n nick (timeAgo now whn)
+                                                           (formatSeen txt cmd chn)
+           
            result Nothing = return $
                             printf "%s: %s means nothing to me." n nick
            timeAgo = ((concatTime . relTime . round) .) . diffUTCTime
@@ -65,28 +68,30 @@ seen (Message (Just (NickName n _ _)) _ params)
 
 seen (Message _ _ _) = return "nlogax fails at pattern matching."
 
-escape c | c `elem` regexChars = '\\' : [c]
-         | otherwise = [c]
-         where regexChars = "\\+()^$.{}]|"
-escape' []     = []
-escape' (c:cs) = escape c ++ escape' cs
+-- Strange that MongoDB doesn't have something like this
+escape :: String -> String
+escape []     = []
+escape (c:cs) = esc c ++ escape cs
+       where esc c1 | c1 `elem` regexChars = '\\' : [c1]
+                    | otherwise           = [c1]
+             regexChars = "\\+()^$.{}]|"
 
-formatSeen :: String -> String -> String -> String -> String
-formatSeen nick msg "PRIVMSG" chan
-    | "\SOHACTION" `isPrefixOf` msg = printf "%s was all like *%s %s* in %s" nick nick
+formatSeen :: String -> String -> String -> String
+formatSeen msg "PRIVMSG" chan
+    | "\SOHACTION" `isPrefixOf` msg = printf "in %s, actioning *%s*" chan
                                              (U.excerpt 100 "..." . init . drop 8 $ U.trim msg)
-                                             chan
-    | otherwise = printf "%s said \"%s\" in %s" nick
-                         (U.excerpt 100 "..." $ U.trim msg) chan
+    | otherwise = printf "in %s, saying: %s" chan
+                         (U.excerpt 100 "..." $ U.trim msg)
 
-formatSeen n m cmd c = case cmd of
-    "PART" -> printf "%s left %s"   n c
-    "JOIN" -> printf "%s joined %s" n c
-    "QUIT" -> printf "%s quit with the message \"%s\"" n m'
-    "NICK" -> printf "%s changed nick to %s" n m
-    _      -> printf "%s did something unspeakable"
+formatSeen m cmd c = case cmd of
+    "PART" -> printf "leaving %s" c
+    "JOIN" -> printf "joining %s" c
+    "QUIT" -> printf "quitting with the message: %s" m'
+    "NICK" -> printf "changing nick to %s" m
+    _      -> printf "doing something unspeakable"
     where m' = U.excerpt' $ U.trim m
 
+relTime :: Int -> [String]
 relTime t | t <  s     = ["now"]
           | t == s     = ["1 second"]
           | t <  m     = [show t ++ " seconds"]
@@ -104,9 +109,10 @@ relTime t | t <  s     = ["now"]
                        | otherwise    = relTime $ mod t v
                 s = 1; m = s * 60; h = m * 60; d = h * 24; w = d * 7
 
+concatTime :: [String] -> String
 concatTime []        = []
 concatTime xss@(x:_) | x == "now"      = x
-                     | 1 == length xss = printf "%s ago." $ concat xss
-                     | otherwise       = printf "%s and %s ago."
+                     | 1 == length xss = printf "%s ago" $ concat xss
+                     | otherwise       = printf "%s and %s ago"
                                                 (intercalate ", " $ init xss)
                                                                   $ last xss
