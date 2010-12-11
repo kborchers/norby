@@ -1,7 +1,7 @@
 name:                 norby
 version:              0.1
--- Synopsis:             
--- Description:          
+synopsis:             [°_°]
+description:          BEEP BEEP BEEP
 license:              BSD3
 license-file:         LICENSE
 author:               Jonas Westerlund
@@ -28,7 +28,7 @@ executable norby
   build-depends:      monads-fd >= 0.1   && <= 1.0
   build-depends:      mongoDB   >= 0.8   && <= 1.0
   -- build-depends:      mueval    >= 0.8   && <= 1.0
-  build-depends:      network   >= 2.3   && <= 3.0
+  build-depends:      network   >= 2.0   && <= 3.0
   build-depends:      parsec    >= 2.0   && <= 3.0
   build-depends:      process   >= 1.0   && <= 2.0
   build-depends:      time      >= 1.1.4 && <= 1.2

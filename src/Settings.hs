@@ -2,9 +2,9 @@ module Settings where
 
 import           Data.List
 
-server = "chat.us.freenode.net"
+server = "chat.freenode.net"
 port   = 6667 :: Int
-nick   = "hsbot"
+nick   = "hsbot2"
 name   = "hsbot"
 
 channels = intercalate "," [ "#clojure"

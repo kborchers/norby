@@ -36,3 +36,5 @@ paramize :: Params -> String
 paramize []  = ""
 paramize [x] = ':' : x
 paramize ps  = intercalate " " (init ps) ++ " :" ++ last ps
+
+data Command2 = JOIN | PING | PONG | PRIVMSG | QUIT

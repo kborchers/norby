@@ -1,5 +1,5 @@
 import           Control.Exception
-import           Control.Monad.Reader hiding (join)
+import           Control.Monad.Reader
 import           Prelude hiding (catch)
 import           System.IO
 
@@ -20,4 +20,4 @@ run = mapM_ write [ Message Nothing "NICK" [nick]
                   , Message Nothing "USER" [nick, "0", "*", name]
                   , Message Nothing "JOIN" [channels]
                   ]
-         >> asks socket >>= listen
+      >> asks socket >>= listen 

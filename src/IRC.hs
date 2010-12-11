@@ -15,6 +15,7 @@ import           Network
 import           Parser
 import qualified Seen as S
 import           Settings
+import           System.Exit
 import           System.IO
 import           Types
 
@@ -30,7 +31,7 @@ socket (Bot h) = h
 -- Connect to the server and return the initial bot state
 connect :: String -> Int -> IO Bot
 connect s p = notify $ do
-    h <- connectTo s $ PortNumber (fromIntegral p)
+    h <- connectTo s . PortNumber $ fromIntegral p
     hSetBuffering h NoBuffering
     return $ Bot h
     where notify a = bracket_
@@ -38,15 +39,19 @@ connect s p = notify $ do
                     (print "It is so.") a
 
 write :: Message -> Net ()
-write msg = asks socket >>= \h -> liftIO $ hPrint h (encode msg)
-                        >> S.store msg >> putStrLn ("sent: " ++ (encode msg))
+write msg = do
+  h <- asks socket
+  liftIO . hPrint h $ encode msg
+  liftIO . putStrLn $ "sent: " ++ (encode msg)
+  liftIO $ S.store msg
 
 -- Process lines from the server
 listen :: Handle -> Net ()
 listen h = forever $ do
     s <- fmap init . liftIO $ hGetLine h
     let Just msg = decode s -- Uh oh! NON-EXHAUSTIVE PATTERNS
-    _ <- liftIO ((putStrLn $ "got:  " ++ s) >> S.store msg) -- Store every message in MongoDB
+    _ <- liftIO . putStrLn $ "got:  " ++ s
+    _ <- liftIO $ S.store msg -- Store every message in MongoDB
     eval msg
 
 -- Decide what to do
