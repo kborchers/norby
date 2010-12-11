@@ -41,10 +41,10 @@ ben = ('8' :) . (++ "D") . flip genericReplicate '='
 
 fap = fmap
 
-gf :: Int -> String
+gf :: Integer -> String
 gf n | n <  0    = "NEGATIVE U"
      | n == 0    = "N'T U"
-     | n <= 9000 = (unwords . replicate n) "NO" ++ " U"
+     | n <= 9000 = (unwords . genericReplicate n) "NO" ++ " U"
      | otherwise = "It's over 9000!"
 
 ajpiano = "PANDEMONIUM!!!" :: String

@@ -36,7 +36,7 @@ connect s p = notify $ do
     return $ Bot h
     where notify a = bracket_
                     (print ("Connecting to " ++ s ++ "...") >> hFlush stdout)
-                    (print "It is so.") a
+                    (print "Done.") a
 
 write :: Message -> Net ()
 write msg = do
@@ -60,12 +60,12 @@ eval (Message _ "PING" p) = write $ Message Nothing "PONG" p
 eval msg@(Message (Just (NickName nn _ _)) _ ps@(p:_))
    | match ".join"  = join (sndWord lastParam)
    | match ".part"  = part (sndWord lastParam)
-   | match ".gtfo"  = quit ["LOL"]
    | match ">"      = command E.evalHsExt
    | match ".type"  = command E.typeOf
    | match ".seen"  = command S.seen
    | match ".pf"    = command E.pointFree
    | match ".unpf"  = command E.pointFul
+   | match ".gtfo"  = quit ["LOL"] >> liftIO exitSuccess
    | otherwise      = return ()
    where command f  = liftIO (f msg) >>= privmsg target
          lastParam  = last ps

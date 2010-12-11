@@ -2,11 +2,12 @@
 
 module Seen where
 
+import           Control.Applicative
+import           Control.Monad.Reader
 import qualified Data.Bson as B
+import           Data.Char
 import           Data.List hiding (sort, insert)
-import           Data.Monoid
 import           Data.Time
-import           Data.UString (u)
 import           Database.MongoDB hiding (rest)
 import qualified Settings as S
 import           Text.Printf
@@ -17,21 +18,25 @@ import qualified Utils as U
 collection :: Collection
 collection = "messages"
 
+run :: (MonadIO m, Applicative m)
+    => ReaderT Database (Action m) a -> m (Either Failure a)
 run action = do
     pool <- newConnPool 1 $ host "127.0.0.1"
     access safe Master pool $ use (Database "seen") action
 
 store :: Message -> IO ()
 store (Message (Just (NickName nick _ _)) cmd params) = do
-      now  <- getCurrentTime
+      now <- getCurrentTime
       let mess = last params
       let chan = head params
-      let message = [ "nick" =: nick, "text" =: mess, "what" =: cmd
+      let message = [ "nick" =: map toLower nick
+                    , "text" =: mess, "what" =: cmd
                     , "chan" =: chan, "date" =: now ]
       run (insert collection message) >> return ()
 
 store (Message _ _ _) = return ()
 
+seen :: Message -> IO String
 seen (Message (Just (NickName n _ _)) _ params)
     | n    == nick   = return $ printf "%s: That's you, I see you in %s right now." n chan
     | nick == S.nick = return $ printf "%s: That's me, I am here in %s." n chan
@@ -42,9 +47,8 @@ seen (Message (Just (NickName n _ _)) _ params)
                    _         -> return "DOOOOM"
      
      where findNick nn =
-                    findOne (select ["nick" =: Regex
-                            (mconcat [u"^", u (escape nn), "$"]) "i"] collection)
-                            { sort = ["_id" =: (-1 :: Int)] }
+                    findOne (select [ "nick" =: map toLower nn ] collection)
+                            { sort = [ "_id" =: (-1 :: Int) ] }
            
            result (Just v) = do
                   now <- getCurrentTime
@@ -56,20 +60,12 @@ seen (Message (Just (NickName n _ _)) _ params)
                                                            (formatSeen txt cmd chn)
            
            result Nothing = return $
-                            printf "%s: %s means nothing to me." n nick
+                            printf "%s: I have never seen %s." n nick
            timeAgo = ((concatTime . relTime . round) .) . diffUTCTime
            nick = U.trim . concat . take 1 . drop 1 . words . last $ params
            chan = concat $ take 1 params
 
 seen (Message _ _ _) = return "nlogax fails at pattern matching."
-
--- Strange that MongoDB doesn't have something like this
-escape :: String -> String
-escape []     = []
-escape (c:cs) = esc c ++ escape cs
-       where esc c1 | c1 `elem` regexChars = '\\' : [c1]
-                    | otherwise           = [c1]
-             regexChars = "\\+()^$.{}]|"
 
 formatSeen :: String -> String -> String -> String
 formatSeen msg "PRIVMSG" chan

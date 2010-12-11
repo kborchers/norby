@@ -18,6 +18,7 @@ type RealName   = String
 type ServerName = String
 type UserName   = String
 
+encode :: Message -> String
 encode (Message (Just prefix) command params) =
         intercalate " " [ penc prefix
                         , command
