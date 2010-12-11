@@ -41,7 +41,7 @@ connect s p = notify $ do
 write :: Message -> Net ()
 write msg = do
   h <- asks socket
-  liftIO . hPrint h $ encode msg
+  liftIO . hPutStrLn h $ encode msg
   liftIO . putStrLn $ "sent: " ++ (encode msg)
   liftIO $ S.store msg
 

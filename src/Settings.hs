@@ -4,7 +4,7 @@ import           Data.List
 
 server = "chat.freenode.net"
 port   = 6667 :: Int
-nick   = "hsbot2"
+nick   = "hsbot"
 name   = "hsbot"
 
 channels = intercalate "," [ "#clojure"

@@ -22,15 +22,15 @@ executable norby
   main-is:            Main.hs
   
   -- Packages needed in order to build this package.
-  build-depends:      base      >= 4     && < 5
-  build-depends:      bson      >= 0.1   && <= 1.0
-  build-depends:      hint      >= 0.3   && <= 1.0
-  build-depends:      monads-fd >= 0.1   && <= 1.0
-  build-depends:      mongoDB   >= 0.8   && <= 1.0
+  build-depends:      base      >= 4     && <  5
+  build-depends:      bson      >= 0.1   && <  1.0
+  build-depends:      hint      >= 0.3   && <  1.0
+  build-depends:      monads-fd >= 0.1   && <  1.0
+  build-depends:      mongoDB   >= 0.8   && <  1.0
   -- build-depends:      mueval    >= 0.8   && <= 1.0
-  build-depends:      network   >= 2.0   && <= 3.0
-  build-depends:      parsec    >= 2.0   && <= 3.0
-  build-depends:      process   >= 1.0   && <= 2.0
+  build-depends:      network   >= 2.3   && <  3.0
+  build-depends:      parsec    >= 3.0   && <  4.0
+  build-depends:      process   >= 1.0   && <  2.0
   build-depends:      time      >= 1.1.4 && <= 1.2
   
   -- Modules not exported by this package.
