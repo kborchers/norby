@@ -14,37 +14,32 @@ import           Types
 
 import qualified Utils as U
 
-hostIP = "127.0.0.1"
-dbName = "seen"
+collection :: Collection
 collection = "messages"
 
-run c d    = runNet $ runConn (useDb dbName d) c
+run action = do
+    pool <- newConnPool 1 $ host "127.0.0.1"
+    access safe Master pool $ use (Database "seen") action
 
-connectDb  = runNet . connect $ host hostIP
-
-store :: Message -> IO String
+store :: Message -> IO ()
 store (Message (Just (NickName nick _ _)) cmd params) = do
-      conn <- connectDb
       now  <- getCurrentTime
       let mess = last params
       let chan = head params
-      let message = ["nick" =: nick, "text" =: mess, "what" =: cmd,
-                     "chan" =: chan, "date" =: now]
-      either (const $ return "MongoDB is down!")
-             ((>> return "Stored.") . flip run (insert collection message))
-             conn
+      let message = [ "nick" =: nick, "text" =: mess, "what" =: cmd
+                    , "chan" =: chan, "date" =: now ]
+      run (insert collection message) >> return ()
 
-store (Message _ _ _) = return "LOL!!" :: IO String
+store (Message _ _ _) = return ()
 
 seen (Message (Just (NickName n _ _)) _ params)
     | n    == nick   = return $ printf "%s: That's you, I see you in %s right now." n chan
     | nick == S.nick = return $ printf "%s: That's me, I am here in %s." n chan
     | otherwise      = do
-        conn <- connectDb
-        either (const $ return "MongoDB is down!")
-               (\c -> run c (findNick nick) >>= \a -> case a of
-                      Right (Right v) -> result v
-                      _               -> return "Kasplode") conn
+              a <- run (findNick nick)
+              case a of
+                   (Right v) -> result v
+                   _         -> return "DOOOOM"
      
      where findNick nn =
                     findOne (select ["nick" =: Regex
@@ -79,9 +74,9 @@ escape (c:cs) = esc c ++ escape cs
 formatSeen :: String -> String -> String -> String
 formatSeen msg "PRIVMSG" chan
     | "\SOHACTION" `isPrefixOf` msg = printf "in %s, actioning *%s*" chan
-                                             (U.excerpt 100 "..." . init . drop 8 $ U.trim msg)
+                                             (U.excerpt 150 "..." . init . drop 8 $ U.trim msg)
     | otherwise = printf "in %s, saying: %s" chan
-                         (U.excerpt 100 "..." $ U.trim msg)
+                         (U.excerpt 150 "..." $ U.trim msg)
 
 formatSeen m cmd c = case cmd of
     "PART" -> printf "leaving %s" c

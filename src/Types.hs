@@ -18,19 +18,19 @@ type RealName   = String
 type ServerName = String
 type UserName   = String
 
--- HMMM: Is this bad use of the Show class?
-instance Show Message where
-         show (Message (Just prefix) command params) =
-               intercalate " " [show prefix, command,
-                                paramize params]
-         show (Message Nothing command params) =
-               intercalate " " [command, paramize params]
+encode (Message (Just prefix) command params) =
+        intercalate " " [ penc prefix
+                        , command
+                        , paramize params
+                        ]
+        where penc (Server s) = ':' : s
+              penc (NickName nick user server) = ':' : nick
+                                   ++ maybe "" ('!' :) user
+                                   ++ maybe "" ('@' :) server
+encode (Message Nothing command params) =
+        intercalate " " [ command
+                        , paramize params ]
 
-instance Show Prefix where
-         show (Server s) = ':' : s
-         show (NickName nick user server) = ':' : nick
-                              ++ maybe "" ('!' :) user
-                              ++ maybe "" ('@' :) server
 
 paramize :: Params -> String
 paramize []  = ""

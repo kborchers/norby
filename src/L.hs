@@ -13,6 +13,7 @@ import           Data.List.Split
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Ratio
+import           Network.URI
 import           Numeric
 import           Text.Printf
 import           Text.Regex
@@ -73,7 +74,7 @@ nlogax     = (++ "n't")               :: String -> String
 paul_irish = ($)                      :: (effin -> rad) -> effin -> rad
 rwaldron   = (++ ". Questions?")      :: String -> String
 sean       = "koole"                  :: String
-seutje     = ("I would of " ++)       :: String -> String
+seutje     = ("I would have " ++)     :: String -> String
 temp01     = Just "awesome"           :: Maybe String
 vladikoff  = ("flod " ++) . (++ "!!") :: String -> String
 

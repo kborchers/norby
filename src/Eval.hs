@@ -4,8 +4,8 @@ import           Control.Monad.Reader
 import           Data.Char
 import           Data.List
 
-import           Mueval.ArgsParse
-import           Mueval.Interpreter
+--import           Mueval.ArgsParse
+--import           Mueval.Interpreter
 
 import qualified Language.Haskell.Interpreter as I
 
@@ -28,6 +28,7 @@ evalHsExt (Message _ _ params) = do
                   , "-t30" ]
 
 -- Evaluate a Haskell expression
+{-
 evalHs :: String -> IO String
 evalHs expr = do
     rt <- liftIO . I.runInterpreter . interpreter $ muOptions { expression = expr }
@@ -40,6 +41,7 @@ evalHs expr = do
     where muOptions = (getOptions []) { expression = expr
                                       , loadFile   = hsFile
                                       , timeLimit  = 5 }
+-}
 
 -- Get inferred type of an expression
 typeOf :: Message -> IO String

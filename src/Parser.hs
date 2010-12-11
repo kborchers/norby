@@ -1,11 +1,11 @@
-module Parser (parseMessage) where
+module Parser (decode) where
 
 import           Data.Maybe
 import           Text.ParserCombinators.Parsec hiding (letter, space)
 import           Types
 
-parseMessage :: String -> Maybe Message
-parseMessage s = either (const Nothing) Just (parse message "Message" s)
+decode :: String -> Maybe Message
+decode s = either (const Nothing) Just (parse message "Message" s)
 
 message :: CharParser () Message
 message = do

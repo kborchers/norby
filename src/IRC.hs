@@ -38,14 +38,14 @@ connect s p = notify $ do
                     (print "It is so.") a
 
 write :: Message -> Net ()
-write msg = asks socket >>= \h -> liftIO $ hPrint h msg
-                        >> S.store msg >> putStrLn ("sent: " ++ (show msg))
+write msg = asks socket >>= \h -> liftIO $ hPrint h (encode msg)
+                        >> S.store msg >> putStrLn ("sent: " ++ (encode msg))
 
 -- Process lines from the server
 listen :: Handle -> Net ()
 listen h = forever $ do
     s <- fmap init . liftIO $ hGetLine h
-    let Just msg = parseMessage s -- Uh oh! NON-EXHAUSTIVE PATTERNS
+    let Just msg = decode s -- Uh oh! NON-EXHAUSTIVE PATTERNS
     _ <- liftIO ((putStrLn $ "got:  " ++ s) >> S.store msg) -- Store every message in MongoDB
     eval msg
 

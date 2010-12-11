@@ -12,7 +12,8 @@ channels = intercalate "," [ "#clojure"
                            , "#jquery"
                            , "#jquery-ot"
                            , "#nlogax"
-                           , "#runlevel6" ]
+                           , "#runlevel6"
+                           ]
 
 -- Authorized bot wranglers
 admins = [ "ajpiano"
@@ -26,4 +27,5 @@ admins = [ "ajpiano"
          , "nlogax"
          , "paul_irish"
          , "seutje"
-         , "temp01" ]
+         , "temp01"
+         ]
