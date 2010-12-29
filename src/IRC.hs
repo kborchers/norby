@@ -34,15 +34,15 @@ connect s p = notify $ do
     h <- connectTo s . PortNumber $ fromIntegral p
     hSetBuffering h NoBuffering
     return $ Bot h
-    where notify a = bracket_
-                    (print ("Connecting to " ++ s ++ "...") >> hFlush stdout)
-                    (print "Done.") a
+    where notify = bracket_
+                  (print $ "Connecting to " ++ s ++ "..." >> hFlush stdout)
+                  (print "Done.")
 
 write :: Message -> Net ()
 write msg = do
   h <- asks socket
   liftIO . hPutStrLn h $ encode msg
-  liftIO . putStrLn $ "sent: " ++ (encode msg)
+  liftIO . putStrLn $ "sent: " ++ encode msg
   liftIO $ S.store msg
 
 -- Process lines from the server

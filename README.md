@@ -1,4 +1,4 @@
 Norby
 =====
 
-An IRC bot, not good for much.
+A little IRC bot I created to learn more about IRC and Haskell.

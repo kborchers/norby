@@ -13,8 +13,10 @@ import           Data.List.Split
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Ratio
+import qualified Data.Text as T
 import           Network.URI
 import           Numeric
+import           Text.PrettyPrint.HughesPJ
 import           Text.Printf
 import           Text.Regex
 

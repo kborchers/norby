@@ -2,13 +2,13 @@
 
 module Seen where
 
-import           Control.Applicative
 import           Control.Monad.Reader
 import qualified Data.Bson as B
 import           Data.Char
 import           Data.List hiding (sort, insert)
 import           Data.Time
 import           Database.MongoDB hiding (rest)
+import           Network.Abstract
 import qualified Settings as S
 import           Text.Printf
 import           Types
@@ -18,8 +18,7 @@ import qualified Utils as U
 collection :: Collection
 collection = "messages"
 
-run :: (MonadIO m, Applicative m)
-    => ReaderT Database (Action m) a -> m (Either Failure a)
+run :: (NetworkIO m) => ReaderT Database (Action m) a -> m (Either Failure a)
 run action = do
     pool <- newConnPool 1 $ host "127.0.0.1"
     access safe Master pool $ use (Database "seen") action
@@ -32,21 +31,21 @@ store (Message (Just (NickName nick _ _)) cmd params) = do
       let message = [ "nick" =: map toLower nick
                     , "text" =: mess, "what" =: cmd
                     , "chan" =: chan, "date" =: now ]
-      run (insert collection message) >> return ()
-
+      run (insert collection message)
+      return ()
 store (Message _ _ _) = return ()
 
 seen :: Message -> IO String
 seen (Message (Just (NickName n _ _)) _ params)
-    | n    == nick   = return $ printf "%s: That's you, I see you in %s right now." n chan
-    | nick == S.nick = return $ printf "%s: That's me, I am here in %s." n chan
-    | otherwise      = do
-              a <- run (findNick nick)
-              case a of
-                   (Right v) -> result v
-                   _         -> return "DOOOOM"
-     
-     where findNick nn =
+    | ln    == lnick  = return $ printf "%s: That's you, I see you in %s right now." n chan
+    | lnick == S.nick = return $ printf "%s: That's me, I am here in %s." n chan
+    | otherwise       = do a <- run (findNick nick)
+                           case a of
+                                (Right v) -> result v
+                                _         -> return "DOOOOM"
+     where ln    = map toLower n
+           lnick = map toLower nick
+           findNick nn =
                     findOne (select [ "nick" =: map toLower nn ] collection)
                             { sort = [ "_id" =: (-1 :: Int) ] }
            
@@ -61,11 +60,11 @@ seen (Message (Just (NickName n _ _)) _ params)
            
            result Nothing = return $
                             printf "%s: I have never seen %s." n nick
-           timeAgo = ((concatTime . relTime . round) .) . diffUTCTime
+           timeAgo d m = relTime . round  $ diffUTCTime d m
            nick = U.trim . concat . take 1 . drop 1 . words . last $ params
            chan = concat $ take 1 params
 
-seen (Message _ _ _) = return "nlogax fails at pattern matching."
+seen (Message _ _ _) = return "NO U"
 
 formatSeen :: String -> String -> String -> String
 formatSeen msg "PRIVMSG" chan
@@ -82,28 +81,26 @@ formatSeen m cmd c = case cmd of
     _      -> printf "doing something unspeakable"
     where m' = U.excerpt' $ U.trim m
 
-relTime :: Int -> [String]
-relTime t | t <  s     = ["now"]
-          | t == s     = ["1 second"]
-          | t <  m     = [show t ++ " seconds"]
-          | t <  m * 2 = ["1 minute"]            ++ rest m
-          | t <  h     = [first m ++ " minutes"] ++ rest m
-          | t <  h * 2 = ["1 hour"]              ++ rest h
-          | t <  d     = [first h ++ " hours"]   ++ rest h
-          | t <  d * 2 = ["1 day"]               ++ rest d
-          | t <  w     = [first d ++ " days"]    ++ rest d
-          | t <  w * 2 = ["1 week"]              ++ rest w
-          | t <  w * 4 = [first w ++ " weeks"]   ++ rest w
-          | otherwise  = ["a long time"]
-          where first  = show . div t
-                rest v | mod t v == 0 = []
-                       | otherwise    = relTime $ mod t v
-                s = 1; m = s * 60; h = m * 60; d = h * 24; w = d * 7
+relTime :: Int -> String
+relTime = printTime . take 3 . flip omg times
+    where omg _ []     = []
+          omg t ((x, s):xs)
+              | divs == 0 = rest
+              | divs == 1 = (divs, s) : rest
+              | otherwise = (divs, s ++ "s") : rest
+              where divs = div t x
+                    rest = omg (mod t x) xs
+          times = [ (31556926, "year")
+                  , (2629744,  "month")
+                  , (604800,   "week")
+                  , (86400,    "day")
+                  , (3600,     "hour")
+                  , (60,       "minute")
+                  , (1,        "second")
+                  ]
 
-concatTime :: [String] -> String
-concatTime []        = []
-concatTime xss@(x:_) | x == "now"      = x
-                     | 1 == length xss = printf "%s ago" $ concat xss
-                     | otherwise       = printf "%s and %s ago"
-                                                (intercalate ", " $ init xss)
-                                                                  $ last xss
+printTime :: (PrintfArg a, Integral a) => [(a, String)] -> String
+printTime []                   = []
+printTime [(n, s)]             = printf "%d %s" n s
+printTime [(n1, s1), (n2, s2)] = printf "%d %s and %d %s" n1 s1 n2 s2
+printTime ((n, s):xs)          = printf "%d %s, %s" n s (printTime xs)

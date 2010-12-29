@@ -2,7 +2,7 @@ module Settings where
 
 import           Data.List
 
-server = "chat.freenode.net"
+server = "lindbohm.freenode.net"
 port   = 6667 :: Int
 nick   = "hsbot"
 name   = "hsbot"
