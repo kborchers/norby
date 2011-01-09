@@ -1,9 +1,9 @@
+import           Bot
 import           Control.Exception
 import           Control.Monad.Reader
 import           Prelude hiding (catch)
 import           System.IO
 
-import           IRC
 import           Settings
 import           Types
 

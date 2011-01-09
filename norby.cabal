@@ -33,8 +33,6 @@ executable norby
   build-depends:      process   >= 1.0   && <  2.0
   build-depends:      time      >= 1.1.4 && <= 1.2
   
-  build-depends:      forkable-monad     >= 0.1.1 && < 1.0
-  
   -- Modules not exported by this package.
   -- Other-modules:       
   

@@ -13,12 +13,10 @@ import           Data.List.Split
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Ratio
-import qualified Data.Text as T
+import           Data.Word
 import           Network.URI
 import           Numeric
-import           Text.PrettyPrint.HughesPJ
 import           Text.Printf
-import           Text.Regex
 
 interleave []     _  = []
 interleave (x:xs) ys = x : interleave ys xs
@@ -27,39 +25,36 @@ padl n p s = pad n p s ++ s
 padr = (ap (++) .) . pad
 pad  = (flip (drop . length) .) . replicate
 
-rgbToHex (r, g, b)
-         | all ok rgb = '#' : concatMap (padl 2 '0' . flip showHex "") rgb
-         | otherwise  = error "All numbers must be >= 0 and <= 255"
-         where ok  = liftM2 (&&) (<= 255) (>= 0)
-               rgb = [r, g, b]
+rgbToHex :: Word8 -> Word8 -> Word8 -> String
+rgbToHex r g b = '#' : concatMap (padl 2 '0' . flip showHex "") [r, g, b]
 
 -- temp01's magical function
-oOo [] = [];
+oOo [] = []
 oOo s  = concat [init s, [toUpper (last s)], tail (reverse s)]
 
 type Peen = String
 ben :: Integer -> Peen
-ben = ('8' :) . (++ "D") . flip genericReplicate '='
+ben = printf "8%sD" . flip genericReplicate '='
 
 fap = fmap
 
 gf :: Integer -> String
 gf n | n <  0    = "NEGATIVE U"
      | n == 0    = "N'T U"
-     | n <= 9000 = (unwords . genericReplicate n) "NO" ++ " U"
+     | n <= 9000 = printf "%s U" (unwords $ genericReplicate n "NO")
      | otherwise = "It's over 9000!"
 
 ajpiano = "PANDEMONIUM!!!" :: String
 
 akahn :: Integer -> String
 akahn 0 = "akahn :)"
-akahn n = "AK" ++ genericReplicate n 'A' ++ "HN!!"
+akahn n = printf "AK%sHN!!" (genericReplicate n 'A')
 
 coldhead :: String -> String
 coldhead  s | null s    = ">: |"
-            | otherwise = "these are truly the last " ++ s
+            | otherwise = printf "these are truly the last %s" s
 
-dabear = ("your mom " ++) :: String -> String
+dabear = printf "your mom %s" :: String -> String
 
 dytrivedi :: String -> String
 dytrivedi s | null s    = "my wife is happy"
@@ -72,45 +67,44 @@ miketaylr s | null ts   = "here, let me open that... wait a minute, there's noth
             | otherwise = unwords ["here, let me open that", s, "for you!"]
             where ts = trim s
 
-nlogax     = (++ "n't")               :: String -> String
+nlogax     = printf "%sn't"           :: String -> String
 paul_irish = ($)                      :: (effin -> rad) -> effin -> rad
-rwaldron   = (++ ". Questions?")      :: String -> String
+rwaldron   = printf "%s. Questions?"  :: String -> String
 sean       = "koole"                  :: String
-seutje     = ("I would have " ++)     :: String -> String
+seutje     = printf "I would have %s" :: String -> String
 temp01     = Just "awesome"           :: Maybe String
-vladikoff  = ("flod " ++) . (++ "!!") :: String -> String
+vladikoff  = printf "flod %s!!"       :: String -> String
 
 mlu = "much like urself"
 muu = "much unlike urself"
 
-trim = trim' . trim'
-       where trim' = reverse . dropWhile isSpace
+trim = let t = reverse . dropWhile isSpace in t . t
 
-dropInit = take 1 . reverse
+dropInit = drop =<< subtract 1 . length
 
-relTime t | t <  s     = ["now"]
-          | t == s     = ["1 second"]
-          | t <  m     = [show t ++ " seconds"]
-          | t <  m * 2 = ["1 minute"]            ++ rest m
-          | t <  h     = [first m ++ " minutes"] ++ rest m
-          | t <  h * 2 = ["1 hour"]              ++ rest h
-          | t <  d     = [first h ++ " hours"]   ++ rest h
-          | t <  d * 2 = ["1 day"]               ++ rest d
-          | t <  w     = [first d ++ " days"]    ++ rest d
-          | t <  w * 2 = ["1 week"]              ++ rest w
-          | t <  w * 4 = [first w ++ " weeks"]   ++ rest w
-          | otherwise  = ["a long time"]
-          where first  = show . div t
-                rest v | mod t v == 0 = []
-                       | otherwise    = relTime $ mod t v
-                s = 1; m = s * 60; h = m * 60; d = h * 24; w = d * 7
+relTime :: (Integral a, PrintfArg a) => a -> String
+relTime = printTime . take 3 . flip omg times
+    where omg _ []     = []
+          omg t ((x, s):xs)
+              | divs == 0 = rest
+              | divs == 1 = (divs, s) : rest
+              | otherwise = (divs, s ++ "s") : rest
+              where divs = div t x
+                    rest = omg (mod t x) xs
+          times = [ (31556926, "year")
+                  , (2629744,  "month")
+                  , (604800,   "week")
+                  , (86400,    "day")
+                  , (3600,     "hour")
+                  , (60,       "minute")
+                  , (1,        "second")
+                  ]
 
-concatTime [] = []
-concatTime xss@(x:_) | x == "now"      = x
-                     | 1 == length xss = printf "%s ago." $ concat xss
-                     | otherwise       = printf "%s and %s ago."
-                                                (intercalate ", " $ init xss)
-                                                                  $ last xss
+printTime :: (PrintfArg t, PrintfArg t1) => [(t, t1)] -> String
+printTime []                   = []
+printTime [(n, s)]             = printf "%d %s" n s
+printTime [(n1, s1), (n2, s2)] = printf "%d %s and %d %s" n1 s1 n2 s2
+printTime ((n, s):xs)          = printf "%d %s, %s" n s (printTime xs)
 
 -- Omg postfix function application so you can `car & drive` instead of `drive car`!
 infixl 0 &
