@@ -8,6 +8,7 @@ module Bot (
   write
 ) where
 
+import           Control.Concurrent
 import           Control.Exception (bracket_)
 import           Control.Monad.Reader hiding (join)
 import           Data.List
@@ -42,14 +43,21 @@ write msg = do
     liftIO . putStrLn $ "sent: " ++ encode msg
     S.store msg
 
+{-
+How can i fork a ReaderT r IO ()?
+forkIO (runReaderT m state)
+If in the ReaderT: state <- ask; liftIO . forkIO $ runReaderT m state
+-}
+
 -- Process lines from the server
 listen :: Handle -> Net ()
 listen h = forever $ do
-    s <- fmap init . liftIO $ hGetLine h
+    s  <- fmap init . liftIO $ hGetLine h
     let Just msg = decode s -- Uh oh! NON-EXHAUSTIVE PATTERNS
-    _ <- liftIO . putStrLn $ "got:  " ++ s
+    _  <- liftIO . putStrLn $ "got:  " ++ s
+    st <- ask
     S.store msg -- Store every message in MongoDB
-    eval msg
+    liftIO . forkIO $ runReaderT (eval msg) st
 
 -- Decide what to do
 eval :: Message -> Net ()
