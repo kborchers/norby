@@ -8,14 +8,14 @@ module Bot (
   write
 ) where
 
-import Commands (eval)
+import Commands                    (handlers)
 import Control.Concurrent
-import Control.Exception (bracket_)
+import Control.Exception           (bracket_)
 import Control.Monad.Reader hiding (join)
 import Database.MongoDB     hiding (eval)
+import Messages
 import Network
 import Parser
-import Seen                 as S
 import Settings
 import System.IO
 import Types
@@ -31,13 +31,6 @@ connect s p = notify $ do
     where notify a = bracket_
                     (print ("Connecting to " ++ s ++ "...") >> hFlush stdout)
                     (print "Done.") a
-
-write :: Message -> Net ()
-write msg = do
-    h <- asks socket
-    liftIO . hPutStrLn h $ encode msg
-    liftIO . putStrLn $ "sent: " ++ encode msg
-    S.store msg
 
 -- Join some channels, and start processing commands
 run :: Net ()
@@ -64,3 +57,5 @@ listen h = forever $ do
     -- Handle each message in a new thread
     liftIO . forkIO $ runReaderT (eval msg) st
 
+eval :: Message -> Net ()
+eval msg = sequence_ $ fmap ($ msg) handlers

@@ -8,22 +8,11 @@ import Data.Char
 import Data.List            hiding (sort, insert)
 import Data.Time
 import Database.MongoDB     hiding (rest)
+import Messages
 import Settings             as S
-import System.IO
 import Text.Printf
 import Types
-
 import Utils                as U
-
-privmsg c m = write $ Message Nothing "PRIVMSG" [c, U.excerpt' m]
-
-write :: Message -> Net ()
-write msg = do
-    h <- asks socket
-    liftIO . hPutStrLn h $ encodedMsg
-    liftIO . putStrLn $ "sent: " ++ encodedMsg
-    store msg
-    where encodedMsg = encode msg
 
 collection :: Collection
 collection = "messages"

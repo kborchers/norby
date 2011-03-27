@@ -1,19 +1,15 @@
 {-# Language OverloadedStrings #-}
 module Commands where
 
-import           Control.Monad (when)
-import           Control.Monad.Reader (asks, liftIO)
-import           Data.List (isPrefixOf)
-import           Eval
-import qualified Seen as S
-import           Settings
-import           System.Exit
-import           System.IO
-import           Types
-import qualified Utils as U
-
-eval :: Message -> Net ()
-eval msg = sequence_ $ fmap ($ msg) handlers
+import Control.Monad (when)
+import Control.Monad.Reader (liftIO)
+import Data.List (isPrefixOf)
+import Eval
+import Messages
+import Seen as S
+import Settings
+import System.Exit
+import Types
 
 handlers = [ evalHandler
            , joinHandler
@@ -22,11 +18,12 @@ handlers = [ evalHandler
            , pingHandler
            , quitHandler
            , seenHandler
+           , typeHandler
            ]
 
 -- These seem very repetitive, but at least nicer than the old stuff
 evalHandler msg = case msg of
-   msg@(Message (Just (NickName nn _ _)) _ ps@(p:_))
+   msg@(Message (Just (NickName _ _ _)) _ ps@(p:_))
        -> when ("> " `isPrefixOf` last ps)
                (liftIO (evalHsExt msg) >>= privmsg p)
    _   -> return ()
@@ -57,9 +54,15 @@ seenHandler msg = case msg of
 quitHandler msg = case msg of
     (Message (Just (NickName nn _ _)) _ ps)
       -> when (".quit " `isPrefixOf` lastp && nn `elem` admins)
-              (quit quitMsg >> liftIO exitSuccess) 
+              (quit quitMsg >> liftIO exitSuccess)
               where quitMsg = drop 1 $ words lastp
                     lastp   = last ps
+    _ -> return ()
+
+typeHandler msg = case msg of
+    (Message (Just (NickName _ _ _)) _ ps@(p:_))
+      -> when (".type " `isPrefixOf` last ps)
+              (liftIO (typeOf msg) >>= privmsg p)
     _ -> return ()
 
 -- Convenience function to reply to the correct channel or person
@@ -69,19 +72,5 @@ replyTo reply msg = case msg of
            where recip | p == nick = nn -- query
                        | otherwise = p  -- channel
     _   -> return ()
-
-write :: Message -> Net ()
-write msg = do
-    h <- asks socket
-    liftIO . hPutStrLn h $ encodedMsg
-    liftIO . putStrLn $ "sent: " ++ encodedMsg
-    S.store msg
-    where encodedMsg = encode msg
-
-privmsg c m = write $ Message Nothing "PRIVMSG" [c, U.excerpt' m]
-
-join = write . Message Nothing "JOIN"
-part = write . Message Nothing "PART"
-quit = write . Message Nothing "QUIT"
 
 sndWord = take 1 . drop 1 . words
