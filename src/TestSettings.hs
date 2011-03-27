@@ -1,23 +1,13 @@
-module Settings where
+module TestSettings where
 
 import Data.List
 
 server = "lindbohm.freenode.net"
 port   = 6667 :: Int
-nick   = "hsbot"
-name   = "hsbot"
+nick   = "hsbot2"
+name   = "hsbot2"
 
--- Default channels to join
-channels = intercalate ","
-         [ "#clojure"
-         , "#inimino"
-         , "#jquery"
-         , "#jquery-ot"
-         , "#jquery-dev"
-         , "#jquery-meeting"
-         , "#nlogax"
-         , "#runlevel6"
-         ]
+channels = intercalate "," [ "#nlogax" ]
 
 -- Authorized bot wranglers
 admins = [ "ajpiano"

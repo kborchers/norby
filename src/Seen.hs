@@ -1,19 +1,29 @@
 {-# Language OverloadedStrings #-}
 
-module Seen where
+module Seen (seen, store) where
 
-import           Commands
-import           Control.Monad.Reader
-import qualified Data.Bson as B
-import           Data.Char
-import           Data.List hiding (sort, insert)
-import           Data.Time
-import           Database.MongoDB hiding (rest)
-import qualified Settings as S
-import           Text.Printf
-import           Types
+import Control.Monad.Reader
+import Data.Bson            as B
+import Data.Char
+import Data.List            hiding (sort, insert)
+import Data.Time
+import Database.MongoDB     hiding (rest)
+import Settings             as S
+import System.IO
+import Text.Printf
+import Types
 
-import qualified Utils as U
+import Utils                as U
+
+privmsg c m = write $ Message Nothing "PRIVMSG" [c, U.excerpt' m]
+
+write :: Message -> Net ()
+write msg = do
+    h <- asks socket
+    liftIO . hPutStrLn h $ encodedMsg
+    liftIO . putStrLn $ "sent: " ++ encodedMsg
+    store msg
+    where encodedMsg = encode msg
 
 collection :: Collection
 collection = "messages"
@@ -33,8 +43,9 @@ store _ = return ()
 
 seen :: Message -> Net ()
 seen (Message (Just (NickName n _ _)) _ params)
-    | ln    == lnick  = privmsg target $ printf "%s: That's you, right there." n
-    | lnick == S.nick = privmsg target $ printf "%s: That's me." n
+    | lnick == ""     = privmsg target $ printf "%s: Who, WHO!?"  n
+    | lnick == ln     = privmsg target $ printf "%s: That's you." n
+    | lnick == S.nick = privmsg target $ printf "%s: That's me."  n
     | otherwise       = do
         cp <- asks pool
         qr <- runDb cp $ findNick lnick
@@ -56,7 +67,7 @@ seen (Message (Just (NickName n _ _)) _ params)
                                       (formatSeen txt cmd chn)
           ln    = map toLower n
           lnick = map toLower nick
-          nick  = U.trim . concat . take 1 . drop 1 . words . last $ params
+          nick  = U.trim . concat . take 1 . drop 1 . words $ last params
           chan  = concat $ take 1 params
           target | chan == S.nick = n
                  | otherwise      = chan
@@ -64,16 +75,13 @@ seen (Message (Just (NickName n _ _)) _ params)
 seen _ = return ()
 
 formatSeen :: String -> String -> String -> String
-formatSeen msg "PRIVMSG" chan
-    | "\SOHACTION" `isPrefixOf` msg = printf "in %s, actioning *%s*" chan
-                                             (U.excerpt 150 "..." . init . drop 8 $ U.trim msg)
-    | otherwise = printf "in %s, saying: %s" chan
-                         (U.excerpt 150 "..." $ U.trim msg)
-
 formatSeen m cmd c = case cmd of
-    "PART" -> printf "leaving %s" c
-    "JOIN" -> printf "joining %s" c
-    "QUIT" -> printf "quitting with the message: %s" m'
-    "NICK" -> printf "changing nick to %s" m
-    _      -> printf "doing something unspeakable"
+    "JOIN"    -> printf "joining %s" c
+    "NICK"    -> printf "changing nick to %s" m
+    "PART"    -> printf "leaving %s" c
+    "PRIVMSG" -> if "\SOHACTION" `isPrefixOf` m
+                    then printf "in %s, actioning *%s*" c (U.excerpt 150 "..." . init . drop 8 $ U.trim m)
+                    else printf "in %s, saying: %s" c (U.excerpt 150 "..." $ U.trim m)
+    "QUIT"    -> printf "quitting with the message: %s" m'
+    _         -> printf "doing something unspeakable"
     where m' = U.excerpt' $ U.trim m

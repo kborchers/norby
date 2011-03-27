@@ -1,39 +1,87 @@
+{-# Language OverloadedStrings #-}
 module Commands where
 
-import           Control.Monad.Reader
---import qualified Seen as S
+import           Control.Monad (when)
+import           Control.Monad.Reader (asks, liftIO)
+import           Data.List (isPrefixOf)
+import           Eval
+import qualified Seen as S
+import           Settings
+import           System.Exit
 import           System.IO
 import           Types
 import qualified Utils as U
 
--- Decide what to do
-{-
 eval :: Message -> Net ()
-eval (Message _ "PING" p) = write $ Message Nothing "PONG" p
-eval msg@(Message (Just (NickName nn _ _)) _ ps@(p:_))
-   | match ".join"  = join (sndWord lastParam)
-   | match ".part"  = part (sndWord lastParam)
-   | match ">"      = command E.evalHsExt
-   | match ".type"  = command E.typeOf
-   | match ".seen"  = command S.seen
-   | match ".pf"    = command E.pointFree
-   | match ".unpf"  = command E.pointFul
-   | match ".gtfo"  = quit ["LOL"] >> liftIO exitSuccess
-   | otherwise      = return ()
-   where command f  = liftIO (f msg) >>= privmsg target
-         lastParam  = last ps
-         match s    = (s ++ " ") `isPrefixOf` lastParam
-         target | p == nick = nn
-                | otherwise = p
+eval msg = sequence_ $ fmap ($ msg) handlers
 
-eval (Message _ _ _) = return ()
--}
+handlers = [ evalHandler
+           , joinHandler
+           , logHandler
+           , partHandler
+           , pingHandler
+           , quitHandler
+           , seenHandler
+           ]
+
+-- These seem very repetitive, but at least nicer than the old stuff
+evalHandler msg = case msg of
+   msg@(Message (Just (NickName nn _ _)) _ ps@(p:_))
+       -> when ("> " `isPrefixOf` last ps)
+               (liftIO (evalHsExt msg) >>= privmsg p)
+   _   -> return ()
+
+joinHandler msg = case msg of
+    (Message (Just (NickName nn _ _)) _ ps)
+        -> when (".join " `isPrefixOf` last ps && nn `elem` admins)
+                (join . sndWord $ last ps)
+    _   -> return ()
+
+logHandler msg  = S.store msg
+
+partHandler msg = case msg of
+    (Message (Just (NickName nn _ _)) _ ps)
+        -> when (".part " `isPrefixOf` last ps && nn `elem` admins)
+                (part . sndWord $ last ps)
+    _   -> return ()
+
+pingHandler msg = case msg of
+    (Message _ "PING" p) -> write $ Message Nothing "PONG" p
+    _                    -> return ()
+
+seenHandler msg = case msg of
+    (Message (Just (NickName _ _ _)) _ ps)
+      -> when (".seen " `isPrefixOf` last ps) (S.seen msg)
+    _ -> return ()
+
+quitHandler msg = case msg of
+    (Message (Just (NickName nn _ _)) _ ps)
+      -> when (".quit " `isPrefixOf` lastp && nn `elem` admins)
+              (quit quitMsg >> liftIO exitSuccess) 
+              where quitMsg = drop 1 $ words lastp
+                    lastp   = last ps
+    _ -> return ()
+
+-- Convenience function to reply to the correct channel or person
+replyTo reply msg = case msg of
+    (Message (Just (NickName nn _ _)) _ (p:_))
+        -> privmsg recip reply
+           where recip | p == nick = nn -- query
+                       | otherwise = p  -- channel
+    _   -> return ()
+
 write :: Message -> Net ()
 write msg = do
     h <- asks socket
-    liftIO . hPutStrLn h $ encode msg
-    liftIO . putStrLn $ "sent: " ++ encode msg
-    --liftIO $ S.store msg
+    liftIO . hPutStrLn h $ encodedMsg
+    liftIO . putStrLn $ "sent: " ++ encodedMsg
+    S.store msg
+    where encodedMsg = encode msg
 
-privmsg :: Param -> Param -> Net ()
 privmsg c m = write $ Message Nothing "PRIVMSG" [c, U.excerpt' m]
+
+join = write . Message Nothing "JOIN"
+part = write . Message Nothing "PART"
+quit = write . Message Nothing "QUIT"
+
+sndWord = take 1 . drop 1 . words

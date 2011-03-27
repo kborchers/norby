@@ -1,19 +1,18 @@
 module Eval where
 
-import           Control.Monad.Reader
-import           Data.Char
-import           Data.List
+--import Control.Monad.Reader
+import Data.Char
+import Data.List
+-- import Mueval.ArgsParse
+-- import Mueval.Context (defaultModules)
+-- import Mueval.Interpreter
 
---import           Mueval.ArgsParse
---import           Mueval.Interpreter
+import Language.Haskell.Interpreter as I
 
-import qualified Language.Haskell.Interpreter as I
+import System.Process
+import Types
+import Utils
 
-import           System.Process
-import           Types
-import           Utils
-
-hsFile :: String
 hsFile = "L" -- A bit dumb, relies on the current working directory
 
 -- Call out to the mueval binary
@@ -22,25 +21,35 @@ evalHsExt (Message _ _ params) = do
     (_, out, _) <- liftIO $ readProcessWithExitCode "mueval" args ""
     return $ "  " ++ (unwords $ words out)
     where args  = [ "-XExtendedDefaultRules"
-                  , "--noimports"
+                  , "--no-imports"
                   , "-l", hsFile ++ ".hs"
                   , "--expression=" ++ (drop 2 . last) params
                   , "-t30" ]
 
 -- Evaluate a Haskell expression
 {-
-evalHs :: String -> IO String
-evalHs expr = do
-    rt <- liftIO . I.runInterpreter . interpreter $ muOptions { expression = expr }
+evalHs :: Message -> IO String
+evalHs (Message _ _ params) = do
+    rt <- liftIO . I.runInterpreter . interpreter $ defaultOptions { expression = expr }
     case rt of
          Left  (I.WontCompile errs) -> return $ niceErrors errs
          Left  err                  -> error  $ intercalate " " . lines $ show err
          -- Expr, type, and result
          Right (_, _, r)            -> return $ "  " ++ r
-    
-    where muOptions = (getOptions []) { expression = expr
-                                      , loadFile   = hsFile
-                                      , timeLimit  = 5 }
+    where expr = drop 2 $ last params
+
+defaultOptions = Options { expression = ""
+                         , modules = Just defaultModules
+                         , timeLimit = 5
+                         , user = ""
+                         , loadFile = ""
+                         , printType = False
+                         , extensions = False
+                         , namedExtensions = []
+                         , noImports = False
+                         , rLimits = False
+                         , help = False
+                         }
 -}
 
 -- Get inferred type of an expression

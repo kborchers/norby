@@ -1,10 +1,10 @@
 {-# Language OverloadedStrings #-}
 module Types where
 
-import           Control.Monad.Reader
-import           Data.List
-import           Database.MongoDB hiding (Command)
-import           System.IO
+import Control.Monad.Reader
+import Data.List
+import Database.MongoDB hiding (Command)
+import System.IO
 
 data Bot = Bot Handle (ConnPool Host)
 type Net = ReaderT Bot IO

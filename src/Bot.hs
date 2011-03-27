@@ -3,26 +3,22 @@ module Bot (
   Net,
   connect,
   listen,
-  privmsg,
+  run,
   socket,
   write
 ) where
 
-import           Control.Concurrent
-import           Control.Exception (bracket_)
-import           Control.Monad.Reader hiding (join)
-import           Data.List
-import           Database.MongoDB     hiding (eval)
-import qualified Eval                 as E
-import           Network
-import           Parser
-import qualified Seen                 as S
-import           Settings
-import           System.Exit
-import           System.IO
-import           Types
-
-import qualified Utils as U
+import Commands (eval)
+import Control.Concurrent
+import Control.Exception (bracket_)
+import Control.Monad.Reader hiding (join)
+import Database.MongoDB     hiding (eval)
+import Network
+import Parser
+import Seen                 as S
+import Settings
+import System.IO
+import Types
 
 -- Connect to the server and return the initial bot state
 connect :: String -> Int -> IO Bot
@@ -43,6 +39,15 @@ write msg = do
     liftIO . putStrLn $ "sent: " ++ encode msg
     S.store msg
 
+-- Join some channels, and start processing commands
+run :: Net ()
+run = mapM_ write [ Message Nothing "NICK" [nick]
+                  , Message Nothing "USER" [nick, "0", "*", name]
+                  , Message Nothing "JOIN" [channels]
+                  ]
+      >>  asks socket
+      >>= listen
+
 {-
 How can i fork a ReaderT r IO ()?
 forkIO (runReaderT m state)
@@ -56,39 +61,6 @@ listen h = forever $ do
     let Just msg = decode s -- Uh oh! NON-EXHAUSTIVE PATTERNS
     _  <- liftIO . putStrLn $ "got:  " ++ s
     st <- ask
-    S.store msg -- Store every message in MongoDB
+    -- Handle each message in a new thread
     liftIO . forkIO $ runReaderT (eval msg) st
 
--- Decide what to do
-eval :: Message -> Net ()
-eval (Message _ "PING" p) = write $ Message Nothing "PONG" p
-eval msg@(Message (Just (NickName nn _ _)) _ ps@(p:_))
-   | match ".join"  = join (sndWord lastParam)
-   | match ".part"  = part (sndWord lastParam)
-   | match ">"      = command E.evalHsExt
-   | match ".type"  = command E.typeOf
-   | match ".seen"  = S.seen msg
-   | match ".pf"    = command E.pointFree
-   | match ".unpf"  = command E.pointFul
-   | match ".gtfo"  = quit ["LOL"] >> liftIO exitSuccess
-   | otherwise      = return ()
-   where command f  = liftIO (f msg) >>= privmsg target
-         lastParam  = last ps
-         match s    = (s ++ " ") `isPrefixOf` lastParam
-         target | p == nick = nn
-                | otherwise = p
-
-eval (Message _ _ _) = return ()
-
-privmsg :: Param -> Param -> Net ()
-privmsg c m = write $ Message Nothing "PRIVMSG" [c, U.excerpt' m]
-
-join :: Params -> Net ()
-join = write . Message Nothing "JOIN"
-part :: Params -> Net ()
-part = write . Message Nothing "PART"
-quit :: Params -> Net ()
-quit = write . Message Nothing "QUIT"
-
-sndWord :: String -> [String]
-sndWord = take 1 . drop 1 . words

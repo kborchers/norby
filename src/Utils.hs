@@ -2,12 +2,8 @@
 {-# Language OverloadedStrings #-}
 module Utils where
 
-import           Control.Monad.Reader
-import           Data.Char
-import           Database.MongoDB     hiding (eval)
-import           Network.Abstract
-import           Text.Printf
-import           Types
+import Data.Char
+import Text.Printf
 
 -- * String utilities
 trim :: String -> String
@@ -19,10 +15,10 @@ excerpt len end s | null $ drop len s = s -- Don't check the length of `s`!
                   | otherwise         = take (len - length end) s ++ end
 
 excerpt' :: String -> String
-excerpt' = excerpt 225 "..."
+excerpt' s = excerpt 225 "..." s
 
 relTime :: Int -> String
-relTime = printTime . take 3 . flip omg times
+relTime t = printTime . take 3 $ omg t times
     where omg _ [] = []
           omg t ((x, s):xs)
               | divs == 0 = rest
@@ -40,7 +36,8 @@ relTime = printTime . take 3 . flip omg times
                   ]
 
 printTime :: (PrintfArg a, Integral a) => [(a, String)] -> String
-printTime []                   = []
-printTime [(n, s)]             = printf "%d %s ago" n s
-printTime [(n1, s1), (n2, s2)] = printf "%d %s and %d %s ago" n1 s1 n2 s2
-printTime ((n, s):xs)          = printf "%d %s, %s" n s (printTime xs)
+printTime xs = case xs of
+    []                   -> []
+    [(n, s)]             -> printf "%d %s ago" n s
+    [(n1, s1), (n2, s2)] -> printf "%d %s and %d %s ago" n1 s1 n2 s2
+    ((n, s):xs)          -> printf "%d %s, %s" n s (printTime xs)
