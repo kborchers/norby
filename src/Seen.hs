@@ -51,8 +51,8 @@ seen (Message (Just (NickName n _ _)) _ params)
               let cmd = B.at "what" d
               let chn = B.at "chan" d
               let whn = B.at "date" d
-              privmsg target $ printf "%s: %s was seen %s, %s"
-                                      n nick (timeAgo now whn)
+              privmsg target $ printf "%s was seen %s, %s"
+                                      nick (timeAgo now whn)
                                       (formatSeen txt cmd chn)
           ln    = map toLower n
           lnick = map toLower nick

@@ -1,6 +1,6 @@
 module Eval where
 
---import Control.Monad.Reader
+-- import Control.Monad.Reader
 import Data.Char
 import Data.List
 -- import Mueval.ArgsParse
@@ -66,18 +66,15 @@ typeOf (Message _ _ params) = do
             Left  err                  -> return $ show err
             Right val                  -> return val
 
-niceErrors :: [I.GhcError] -> String
 niceErrors = excerpt' . intercalate " " . concatMap lines . fmap I.errMsg
 
 -- Pointfree refactoring
-pointFree :: Message -> IO String
-pointFree = pointy "pointfree"
-
-pointFul :: Message -> IO String
-pointFul = pointy "pointful"
-
 pointy :: (MonadIO m) => FilePath -> Message -> m String
 pointy p (Message _ _ params) = do
     let expr = trim . dropWhile (not . isSpace) $ last params
     (_, out, _) <- liftIO $ readProcessWithExitCode p [expr] ""
     return . intercalate " " $ lines out
+
+pointFree = pointy "pointfree" :: Message -> IO String
+
+pointFul = pointy "pointful" :: Message -> IO String

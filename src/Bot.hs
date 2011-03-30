@@ -8,7 +8,7 @@ module Bot (
   write
 ) where
 
-import Commands                    (handlers)
+import Commands                    (eval)
 import Control.Concurrent
 import Control.Exception           (bracket_)
 import Control.Monad.Reader hiding (join)
@@ -36,7 +36,6 @@ connect s p = notify $ do
 run :: Net ()
 run = mapM_ write [ Message Nothing "NICK" [nick]
                   , Message Nothing "USER" [nick, "0", "*", name]
-                  , Message Nothing "JOIN" [channels]
                   ]
       >>  asks socket
       >>= listen
@@ -56,6 +55,3 @@ listen h = forever $ do
     st <- ask
     -- Handle each message in a new thread
     liftIO . forkIO $ runReaderT (eval msg) st
-
-eval :: Message -> Net ()
-eval msg = sequence_ $ fmap ($ msg) handlers
