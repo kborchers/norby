@@ -16,6 +16,7 @@ import Data.Ratio
 import Data.Word
 import Network.URI
 import Numeric
+import Prelude
 import Text.Printf
 
 interleave []     _  = []

@@ -34,11 +34,10 @@ connect s p = notify $ do
 
 -- Join some channels, and start processing commands
 run :: Net ()
-run = mapM_ write [ Message Nothing "NICK" [nick]
-                  , Message Nothing "USER" [nick, "0", "*", name]
-                  ]
-      >>  asks socket
-      >>= listen
+run = mapM_ write msgs >> asks socket >>= listen
+      where msgs = [ Message Nothing "NICK" [nick]
+                   , Message Nothing "USER" [nick, "0", "*", name]
+                   ]
 
 {-
 How can i fork a ReaderT r IO ()?
@@ -49,9 +48,8 @@ If in the ReaderT: state <- ask; liftIO . forkIO $ runReaderT m state
 -- Process lines from the server
 listen :: Handle -> Net ()
 listen h = forever $ do
-    s  <- fmap init . liftIO $ hGetLine h
+    s <- fmap init . liftIO $ hGetLine h
+    liftIO . putStrLn $ "got:  " ++ s
     let Just msg = decode s -- Uh oh! NON-EXHAUSTIVE PATTERNS
-    _  <- liftIO . putStrLn $ "got:  " ++ s
-    st <- ask
     -- Handle each message in a new thread
-    liftIO . forkIO $ runReaderT (eval msg) st
+    liftIO . forkIO . runReaderT (eval msg) =<< ask

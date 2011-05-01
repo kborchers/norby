@@ -39,8 +39,8 @@ seen (Message (Just (NickName n _ _)) _ params)
         cp <- asks pool
         qr <- runDb cp $ findNick lnick
         case qr of
-                (Left _)  -> privmsg target "Connection error."
-                (Right v) -> result v
+            (Left _)  -> privmsg target "Connection error."
+            (Right v) -> result v
     where findNick n  = findOne (select [ "nick" =: n ] collection) { sort = [ "_id" =: (-1 :: Int) ]}
           timeAgo d m = U.relTime . round $ diffUTCTime d m
           result Nothing  = privmsg target $ printf

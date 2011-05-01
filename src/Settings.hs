@@ -2,6 +2,7 @@ module Settings where
 
 server = "lindbohm.freenode.net"
 port   = 6667 :: Int
+
 nick   = "hsbot"
 name   = "hsbot"
 

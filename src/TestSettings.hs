@@ -4,10 +4,10 @@ import Data.List
 
 server = "lindbohm.freenode.net"
 port   = 6667 :: Int
-nick   = "hsbot2"
-name   = "hsbot2"
+nick   = "hsbot-dev"
+name   = "hsbot-dev"
 
-channels = intercalate "," [ "#nlogax" ]
+channels = [ "#nlogax" ]
 
 -- Authorized bot wranglers
 admins = [ "ajpiano"

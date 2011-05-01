@@ -32,7 +32,7 @@ handlers = [ connectHandler
 -- The pattern matching should be replaced by a predicate function
 -- so that the handler just needs to do its thing
 connectHandler msg = case msg of
-    (Message _ "001" _) -> write $ Message Nothing "JOIN" [intercalate "," channels]
+    (Message _ "001" _) -> join [intercalate "," channels]
     _                   -> return ()
 
 evalHandler msg = case msg of
@@ -42,7 +42,7 @@ evalHandler msg = case msg of
    _   -> return ()
 
 inviteHandler msg = case msg of
-    (Message (Just (NickName nn _ _)) "INVITE" ps)
+    (Message (Just (NickName _ _ _)) "INVITE" ps)
         -> join $ drop 1 ps
     _   -> return ()
 
@@ -66,12 +66,14 @@ pingHandler msg = case msg of
 
 pointFreeHandler msg = case msg of
     (Message (Just (NickName _ _ _)) _ ps@(p:_))
-      -> when (".pf " `isPrefixOf` last ps) (liftIO (pointFree msg) >>= privmsg p)
+      -> when (".pf " `isPrefixOf` last ps)
+              (liftIO (pointFree msg) >>= privmsg p)
     _ -> return ()
 
 pointFulHandler msg = case msg of
     (Message (Just (NickName _ _ _)) _ ps@(p:_))
-      -> when (".unpf " `isPrefixOf` last ps) (liftIO (pointFul msg) >>= privmsg p)
+      -> when (".unpf " `isPrefixOf` last ps)
+              (liftIO (pointFul msg) >>= privmsg p)
     _ -> return ()
 
 seenHandler msg = case msg of

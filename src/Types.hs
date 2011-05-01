@@ -51,6 +51,7 @@ encode (Message Nothing command params) =
                         , paramize params ]
 
 paramize :: Params -> String
-paramize []     = []
-paramize [x]    = ':' : x
-paramize (x:xs) = unwords [x, paramize xs]
+paramize ps = case ps of
+    []     -> []
+    [x]    -> ':' : x
+    (x:xs) -> unwords [x, paramize xs]
