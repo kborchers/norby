@@ -85,6 +85,9 @@ vladikoff  = printf "flod %s!!"       :: String -> String
 mlu = "much like urself"
 muu = "much unlike urself"
 
+source = "https://github.com/nlogax/norby"
+sauce = source
+
 trim = let t = reverse . dropWhile isSpace in t . t
 
 dropInit = drop =<< subtract 1 . length
