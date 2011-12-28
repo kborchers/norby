@@ -18,8 +18,8 @@ hsFile = "L" -- A bit dumb, relies on the current working directory
 -- Call out to the mueval binary
 evalHsExt :: Message -> IO String
 evalHsExt (Message _ _ params) = do
-    (_, out, _) <- liftIO $ readProcessWithExitCode "mueval" args ""
-    return $ "  " ++ (unwords $ words out)
+    (_, out, err) <- liftIO $ readProcessWithExitCode "mueval" args ""
+    return $ "  " ++ (unwords $ words out ++ words err)
     where args  = [ "-XExtendedDefaultRules"
                   , "--no-imports"
                   , "-l", hsFile ++ ".hs"

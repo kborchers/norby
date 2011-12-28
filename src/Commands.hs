@@ -49,7 +49,7 @@ inviteHandler msg = case msg of
 joinHandler msg = case msg of
     (Message (Just (NickName nn _ _)) _ ps)
         -> when (".join " `isPrefixOf` last ps && nn `elem` admins)
-                (join . sndWord $ last ps)
+                (join . drop 1 . words $ last ps)
     _   -> return ()
 
 logHandler msg  = S.store msg
