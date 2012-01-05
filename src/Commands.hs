@@ -3,6 +3,7 @@ module Commands where
 
 import Control.Monad (when)
 import Control.Monad.Reader (liftIO)
+import Data.Char
 import Data.List (intercalate, isPrefixOf)
 import Eval
 import Messages
@@ -25,6 +26,7 @@ handlers = [ connectHandler
            , pointFulHandler
            , pingHandler
            , quitHandler
+           , sayHandler
            , seenHandler
            , typeHandler
            ]
@@ -75,6 +77,16 @@ pointFulHandler msg = case msg of
     (Message (Just (NickName _ _ _)) _ ps@(p:_))
       -> when (".unpf " `isPrefixOf` last ps)
               (liftIO (pointFul msg) >>= replyTo msg)
+    _ -> return ()
+
+sayHandler msg = case msg of
+    (Message (Just (NickName nn _ _)) _ ps)
+      -> when (".say " `isPrefixOf` last ps && nn `elem` admins)
+              (privmsg target message)
+              where target    = takeWhile (not . isSpace) . skipSpace . skipWord $ last ps
+                    message   = skipSpace . skipWord . skipSpace . skipWord $ last ps
+                    skipWord  = dropWhile (not . isSpace)
+                    skipSpace = dropWhile isSpace
     _ -> return ()
 
 seenHandler msg = case msg of
