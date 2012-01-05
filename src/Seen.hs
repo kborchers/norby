@@ -31,19 +31,19 @@ store (Message (Just (NickName nick _ _)) cmd params) = do
 store _ = return ()
 
 seen :: Message -> Net ()
-seen (Message (Just (NickName n _ _)) _ params)
-    | lnick == ""     = privmsg target $ printf "%s: Who, WHO!?"  n
-    | lnick == ln     = privmsg target $ printf "%s: That's you." n
-    | lnick == S.nick = privmsg target $ printf "%s: That's me."  n
+seen msg@(Message (Just (NickName n _ _)) _ params)
+    | lnick == ""     = replyTo msg $ printf "%s: Who, WHO!?"  n
+    | lnick == ln     = replyTo msg $ printf "%s: That's you." n
+    | lnick == S.nick = replyTo msg $ printf "%s: That's me."  n
     | otherwise       = do
         cp <- asks pool
         qr <- runDb cp $ findNick lnick
         case qr of
-            (Left _)  -> privmsg target "Connection error."
+            (Left _)  -> replyTo msg "Connection error."
             (Right v) -> result v
     where findNick n  = findOne (select [ "nick" =: n ] collection) { sort = [ "_id" =: (-1 :: Int) ]}
           timeAgo d m = U.relTime . round $ diffUTCTime d m
-          result Nothing  = privmsg target $ printf
+          result Nothing  = replyTo msg $ printf
                             "%s: I have never seen %s." n nick
           result (Just d) = do
               now <- liftIO getCurrentTime
@@ -51,15 +51,12 @@ seen (Message (Just (NickName n _ _)) _ params)
               let cmd = B.at "what" d
               let chn = B.at "chan" d
               let whn = B.at "date" d
-              privmsg target $ printf "%s was seen %s, %s"
-                                      nick (timeAgo now whn)
-                                      (formatSeen txt cmd chn)
+              replyTo msg $ printf "%s was seen %s, %s"
+                                   nick (timeAgo now whn)
+                                   (formatSeen txt cmd chn)
           ln    = map toLower n
           lnick = map toLower nick
           nick  = U.trim . concat . take 1 . drop 1 . words $ last params
-          chan  = concat $ take 1 params
-          target | chan == S.nick = n
-                 | otherwise      = chan
 
 seen _ = return ()
 

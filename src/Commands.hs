@@ -10,6 +10,7 @@ import Seen as S
 import Settings
 import System.Exit
 import Types
+import Utils
 
 eval :: Message -> Net ()
 eval msg = sequence_ $ fmap ($ msg) handlers
@@ -38,7 +39,7 @@ connectHandler msg = case msg of
 evalHandler msg = case msg of
    msg@(Message (Just (NickName _ _ _)) _ ps@(p:_))
        -> when ("> " `isPrefixOf` last ps)
-               (liftIO (evalHsExt msg) >>= privmsg p)
+               (liftIO (evalHsExt msg) >>= replyTo msg)
    _   -> return ()
 
 inviteHandler msg = case msg of
@@ -67,13 +68,13 @@ pingHandler msg = case msg of
 pointFreeHandler msg = case msg of
     (Message (Just (NickName _ _ _)) _ ps@(p:_))
       -> when (".pf " `isPrefixOf` last ps)
-              (liftIO (pointFree msg) >>= privmsg p)
+              (liftIO (pointFree msg) >>= replyTo msg)
     _ -> return ()
 
 pointFulHandler msg = case msg of
     (Message (Just (NickName _ _ _)) _ ps@(p:_))
       -> when (".unpf " `isPrefixOf` last ps)
-              (liftIO (pointFul msg) >>= privmsg p)
+              (liftIO (pointFul msg) >>= replyTo msg)
     _ -> return ()
 
 seenHandler msg = case msg of
@@ -92,15 +93,5 @@ quitHandler msg = case msg of
 typeHandler msg = case msg of
     (Message (Just (NickName _ _ _)) _ ps@(p:_))
       -> when (".type " `isPrefixOf` last ps)
-              (liftIO (typeOf msg) >>= privmsg p)
+              (liftIO (typeOf msg) >>= replyTo msg)
     _ -> return ()
-
--- Convenience function to reply to the correct channel or person
-replyTo reply msg = case msg of
-    (Message (Just (NickName nn _ _)) _ (p:_))
-        -> privmsg recip reply
-           where recip | p == nick = nn -- query
-                       | otherwise = p  -- channel
-    _   -> return ()
-
-sndWord = take 1 . drop 1 . words

@@ -5,6 +5,8 @@ module Utils where
 import Data.Char
 import Text.Printf
 
+sndWord = take 1 . drop 1 . words
+
 -- * String utilities
 trim :: String -> String
 trim = trim' . trim'
