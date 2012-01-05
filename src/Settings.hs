@@ -32,6 +32,7 @@ admins = [ "BBonifield"
          , "paul_irish"
          , "seutje"
          , "temp01"
+         , "kborchers"
          ]
 
 waKey = "GAEW7L-JLAX59HR35"
